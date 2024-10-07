@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.db import models
 
 # Company Model
@@ -29,6 +29,10 @@ class CustomUser(AbstractUser):
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=EMPLOYEE)
     company = models.ForeignKey(Company, on_delete=models.SET_NULL, related_name="users", null=True, blank=True)
+
+    # Add related_name for groups and user_permissions to avoid clash with auth.User
+    groups = models.ManyToManyField(Group, related_name="customuser_set", blank=True)
+    user_permissions = models.ManyToManyField(Permission, related_name="customuser_permissions_set", blank=True)
 
     def __str__(self):
         return self.username

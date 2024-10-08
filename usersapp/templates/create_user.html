@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block main_page %}
+<div class="w3-main" style="margin-left:20px;margin-top:43px;">
+    <div class="w3-container w3-card-4 w3-white w3-margin">
+        <h2>Crear nuevo usuario</h2>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+        <ul>
+            <li>La contraseña no puede ser muy similar a tu informacion personal</li>
+            <li>La contraseña debe contener almenos 8 caracteres</li>
+            <li>La contraseña no puede ser una contraseña sencilla o comun</li>
+            <li>La contraseña no puede ser enteramente numerica</li>
+        </ul>
+            <button type="submit" class="w3-button w3-green">Crear usuario</button>
+            <a href="{% url 'home' %}" class="w3-button w3-red">Cancelar</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

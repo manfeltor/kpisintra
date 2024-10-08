@@ -17,7 +17,7 @@ class CustomUser(AbstractUser):
     MANAGER = 'manager'
     EMPLOYEE = 'employee'
     ADMIN = 'admin'
-    CLIENT = 'admin'
+    CLIENT = 'client'
 
     ROLE_CHOICES = [
         (MANAGER, 'Manager'),

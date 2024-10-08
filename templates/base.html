@@ -13,11 +13,14 @@ body {font-size:16px;}
 .w3-half img:hover{opacity:1}
 </style>
 </head>
-<body style="background-color: #F0F0F0;">
+<body style="background-color: antiquewhite;">
 
 <!-- Sidebar/menu -->
 <nav class="w3-sidebar w3-collapse w3-top w3-large w3-padding" style="z-index:3;width:300px;font-weight:bold;background-color: #234154;" id="mySidebar"><br>
   {% if request.user.is_authenticated %}
+  <div class="w3-col s8 w3-bar">
+    <span style="color: antiquewhite;">Bienvenido <strong>{{ request.user.username }}</strong></span><br>
+  </div>
   <button class="w3-bar-item w3-button w3-left login-btn " style="margin-bottom:10px;color:#f33d30;" onclick="showLogoutModal()">Logout</button>
   {% else %}
   <button class="w3-bar-item w3-button w3-left login-btn " style="margin-bottom:10px;color:#f33d30;" onclick="document.getElementById('loginModal').style.display='block'">Login</button>
@@ -27,15 +30,66 @@ body {font-size:16px;}
     <h3 style="color:azure;"><b>INTRALOG<br>Metrics</b></h3>
   </div>
   <div class="w3-bar-block">
-    <a href="#" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;margin-top:30px;">Home</a> 
-    <a href="#showcase" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Segmento 1</a> 
-    <a href="#services" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Segmento 2</a> 
-    <a href="#designers" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Segmento 3</a> 
-    <a href="#packages" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Segmento 4</a> 
-    <a href="#contact" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Segmento 5</a>
+    <a href="#" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;margin-top:30px;">Home</a>
+    {% if request.user.is_authenticated %}
+      <a href="#" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Segmento 1</a>
+      <a href="#" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Segmento 2</a>
+      {% if request.user.is_management or request.user.is_superuser %}
+        <a href="{% url 'create_user' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Segmento 3</a>
+      {% endif %}
+      {% if request.user.is_superuser %}
+        <a href="#" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Segmento 3</a>
+      {% endif %}
+    {% endif %}
   </div>
-</nav>
 
+  <!-- Login Modal -->
+<div id="loginModal" class="w3-modal" style="{% if login_error %}display:block;{% endif %}">
+  <!-- Ignorar error anterior. py no reconoce el metodo HTML -->
+    <div class="w3-modal-content w3-card-4 w3-animate-top" style="max-width:400px; background-color: antiquewhite;">
+      <div class="w3-center"><br>
+        <span onclick="document.getElementById('loginModal').style.display='none'" class="w3-button w3-xlarge w3-hover-red w3-display-topright" title="Close Modal">&times;</span>
+        {% if login_error %}
+        <div class="w3-panel w3-red">
+          <p>{{ login_error }}</p>
+        </div>
+        {% endif %}
+        <form action="{% url 'login' %}" method="post" class="w3-container">
+          {% csrf_token %}
+          <div class="w3-section">
+            <label><b>Usuario</b></label>
+            <input class="w3-input w3-border w3-margin-bottom" type="text" placeholder="username" name="username" required>
+            <label><b>Contraseña</b></label>
+            <input class="w3-input w3-border" type="password" placeholder="pass" name="password" required>
+            <button class="w3-button w3-block w3-section w3-padding" type="submit" style="background-color: #234154;color: antiquewhite;">Login</button>
+          </div>
+        </form>
+        <div class="w3-container w3-border-top w3-padding-16 w3-light-grey">
+          <button onclick="document.getElementById('loginModal').style.display='none'" type="button" class="w3-button w3-red">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- Logout Modal -->
+<div id="logoutModal" class="w3-modal">
+  <div class="w3-modal-content w3-card-4 w3-animate-top" style="max-width:400px; background-color: antiquewhite;">
+    <div class="w3-center"><br>
+      <span onclick="document.getElementById('logoutModal').style.display='none'" class="w3-button w3-xlarge w3-hover-red w3-display-topright" title="Close Modal">&times;</span>
+      <form action="{% url 'logout' %}" method="post" class="w3-container">
+        {% csrf_token %}
+        <div class="w3-section">
+          <p>Estas seguro que quieres desloguearte?</p>
+          <button class="w3-button w3-block w3-section w3-padding" type="submit" style="background-color: #234154;color: antiquewhite;">Si, deslogueame</button>
+        </div>
+      </form>
+      <div class="w3-container w3-border-top w3-padding-16 w3-light-grey">
+        <button onclick="document.getElementById('logoutModal').style.display='none'" type="button" class="w3-button w3-red">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+</nav>
 <!-- Top menu on small screens -->
 <header class="w3-container w3-top w3-hide-large w3-xlarge w3-padding" style="background-color: #234154;">
   <a href="javascript:void(0)" class="w3-button w3-margin-right w3-red" onclick="w3_open()">☰</a>
@@ -47,6 +101,7 @@ body {font-size:16px;}
 
 <!-- !PAGE CONTENT! -->
 <div class="w3-main" style="margin-left:340px;margin-right:40px">
+{% block main_page %}
 
   <!-- Header -->
   <div class="w3-container" style="margin-top:50px" id="showcase">
@@ -117,9 +172,8 @@ body {font-size:16px;}
  
   <div class="w3-row-padding w3-grayscale" style="margin-top: 75px;">
     <div class="w3-col m4 w3-margin-bottom">
-      <div class="w3-light-grey">
         <img src="/yourimage.jpg" alt="Your Name" style="width:100%">
-          <div class="w3-container">
+        <div class="w3-container">
           <h3>Felipe Torres</h3>
           <p class="w3-opacity">Líder de Desarrollo de INTRALOG Metrics</p>
           <p>Como único desarrollador detrás de INTRALOG Metrics, 
@@ -127,9 +181,14 @@ body {font-size:16px;}
             a optimizar la logística y a mejorar la toma de decisiones estratégicas. 
             Mi objetivo con esta herramienta es proporcionar métricas precisas y útiles 
             tanto para clientes internos como externos.</p>
-          </div>
-      </div>
+        </div>
     </div>
+  </div>
+
+  <!-- The company -->
+  <div class="w3-container" id="designers" style="margin-top:75px">
+    <h1 class="w3-xxxlarge w3-text-red">un servicio de <b><a class="w3-hover-sepia" href="https://intralog.com.ar/">INTRALOG SA.</a></b></h1>
+    <hr style="width:50px;border:5px solid #f33d30" class="w3-round">
   </div>
 
 
@@ -178,7 +237,7 @@ body {font-size:16px;}
     </div>
   </div> -->
   
-  <!-- Contact -->
+  <!-- Contact
   <div class="w3-container" id="contact" style="margin-top:75px">
     <h1 class="w3-xxxlarge w3-text-red"><b>Contact.</b></h1>
     <hr style="width:50px;border:5px solid red" class="w3-round">
@@ -198,13 +257,14 @@ body {font-size:16px;}
       </div>
       <button type="submit" class="w3-button w3-block w3-padding-large w3-red w3-margin-bottom">Send Message</button>
     </form>  
-  </div>
+  </div> -->
 
 <!-- End page content -->
 </div>
+{% endblock %}
 
 <!-- W3.CSS Container -->
-<div class="w3-light-grey w3-container w3-padding-32" style="margin-top:75px;padding-right:58px"><p class="w3-right">Powered by <a href="#" title="W3.CSS" target="_blank" class="w3-hover-opacity">Felipe Torres</a></p></div>
+<div class="w3-container w3-padding-32" style="margin-top:75px;padding-right:58px"><p class="w3-right">Powered by <a href="#" title="W3.CSS" target="_blank" class="w3-hover-opacity">Felipe Torres</a></p></div>
 
 <script>
 // Script to open and close sidebar
@@ -224,6 +284,15 @@ function onClick(element) {
   document.getElementById("modal01").style.display = "block";
   var captionText = document.getElementById("caption");
   captionText.innerHTML = element.alt;
+}
+
+function showLogoutModal() {
+    document.getElementById('logoutModal').style.display = 'block';
+}
+
+// Hide the logout confirmation section
+  function cancelLogout() {
+    document.getElementById('logoutModal').style.display = 'none';
 }
 </script>
 

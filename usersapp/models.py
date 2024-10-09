@@ -58,4 +58,4 @@ class UserAttribute(models.Model):
     comp = models.ForeignKey(Company, on_delete=models.SET_NULL, related_name='user_attributes', null=True)
 
     def __str__(self):
-        return f'{self.user.username} - {self.get_relacion_display()}'
+        return f'{self.user.username}'

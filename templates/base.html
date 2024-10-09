@@ -15,10 +15,11 @@ body {font-size:16px;}
 </head>
 <body style="background-color: antiquewhite;">
 
+{% block sidebar %}
 <!-- Sidebar/menu -->
 <nav class="w3-sidebar w3-collapse w3-top w3-large w3-padding" style="z-index:3;width:300px;font-weight:bold;background-color: #234154;" id="mySidebar"><br>
   {% if request.user.is_authenticated %}
-  <div class="w3-col s8 w3-bar">
+  <div class="w3-bar-item" style="margin-left: 15px;">
     <span style="color: antiquewhite;">Bienvenido <strong>{{ request.user.username }}</strong></span><br>
   </div>
   <button class="w3-bar-item w3-button w3-left login-btn " style="margin-bottom:10px;color:#f33d30;" onclick="showLogoutModal()">Logout</button>
@@ -30,18 +31,17 @@ body {font-size:16px;}
     <h3 style="color:azure;"><b>INTRALOG<br>Metrics</b></h3>
   </div>
   <div class="w3-bar-block">
-    <a href="#" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;margin-top:30px;">Home</a>
+    <a href="{% url 'home' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;margin-top:30px;">Home</a>
     {% if request.user.is_authenticated %}
       <a href="#" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Segmento 1</a>
       <a href="#" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Segmento 2</a>
       {% if request.user.is_management or request.user.is_superuser %}
-        <a href="{% url 'create_user' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Segmento 3</a>
+        <a href="{% url 'adminpanel' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: #f33d30;">Admin Panel</a>
       {% endif %}
-      {% if request.user.is_superuser %}
-        <a href="#" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Segmento 3</a>
-      {% endif %}
+      
     {% endif %}
   </div>
+{% endblock %}
 
   <!-- Login Modal -->
 <div id="loginModal" class="w3-modal" style="{% if login_error %}display:block;{% endif %}">
@@ -262,10 +262,10 @@ body {font-size:16px;}
 <!-- End page content -->
 </div>
 {% endblock %}
-
+{% block footer %}
 <!-- W3.CSS Container -->
-<div class="w3-container w3-padding-32" style="margin-top:75px;padding-right:58px"><p class="w3-right">Powered by <a href="#" title="W3.CSS" target="_blank" class="w3-hover-opacity">Felipe Torres</a></p></div>
-
+<div class="w3-container w3-padding-32" style="margin-top:275px;padding-right:58px"><p class="w3-right">Powered by <a href="#" title="W3.CSS" target="_blank" class="w3-hover-opacity">Felipe Torres</a> para <a href="https://intralog.com.ar/" title="W3.CSS" target="_blank" class="w3-hover-opacity">INTRALOG SA</a></p></div>
+{% endblock %}
 <script>
 // Script to open and close sidebar
 function w3_open() {

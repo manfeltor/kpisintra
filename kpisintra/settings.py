@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'landingapp',
     'usersapp',
+    'adminapp',
 ]
 
 MIDDLEWARE = [
@@ -89,7 +90,6 @@ DATABASES = {
 }
 
 
-
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
 
@@ -108,6 +108,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+AUTH_USER_MODEL = 'usersapp.CustomUser'
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/

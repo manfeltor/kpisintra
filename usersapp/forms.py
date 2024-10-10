@@ -1,6 +1,42 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from .models import CustomUser, Company
+from dataapp.models import Order
+
+class CompanyCreationForm(forms.ModelForm):
+    class Meta:
+        model = Company
+        fields = ['name', 'address', 'contact_email', 'contact_phone']
+    
+    def __init__(self, *args, **kwargs):
+        super(CompanyCreationForm, self).__init__(*args, **kwargs)
+
+       # Get distinct sellers from the Order model
+        distinct_sellers = Order.objects.values_list('seller__name', flat=True).distinct()
+
+        # Get companies already created
+        existing_companies = Company.objects.values_list('name', flat=True)
+
+        # Filter the dropdown to only show companies that haven't been created yet
+        available_companies = [seller for seller in distinct_sellers if seller not in existing_companies]
+
+        # Override the 'name' field as a ChoiceField for the dropdown
+        self.fields['name'] = forms.ChoiceField(choices=[(company, company) for company in available_companies])
+
+        # labels
+        self.fields['name'].label = "Selecciona la compañia"
+        self.fields['address'].label = "direccion"
+        self.fields['contact_email'].label = "Email"
+        self.fields['contact_phone'].label = "Telefono"
+        
+        # Add placeholders for form fields
+        self.fields['name'].widget.attrs['placeholder'] = 'Nombre compañia'
+        self.fields['address'].widget.attrs['placeholder'] = 'Direccion'
+        self.fields['contact_email'].widget.attrs['placeholder'] = 'Mail'
+        self.fields['contact_phone'].widget.attrs['placeholder'] = 'Telefono'
+        
+        # You can also customize validation error messages here if needed
+
 
 class CustomUserCreationForm(UserCreationForm):
     company = forms.ModelChoiceField(queryset=Company.objects.all(), required=False)

@@ -7,7 +7,7 @@ import json
 class Order(models.Model):
     pedido = models.CharField(max_length=100)
     flujo = models.CharField(max_length=10)
-    seller = models.ForeignKey(Company, on_delete=models.SET_NULL, related_name="orders")
+    seller = models.ForeignKey(Company, on_delete=models.SET_NULL, related_name="orders", null=True)
     sucursal = models.CharField(max_length=50)
     estadoPedido = models.CharField(max_length=50)
     fechaCreacion = models.DateTimeField()

@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block sidebar %}
+<!-- Sidebar/menu -->
+<nav class="w3-sidebar w3-collapse w3-top w3-large w3-padding" style="z-index:3;width:300px;font-weight:bold;background-color: #234154;" id="mySidebar"><br>
+  {% if request.user.is_authenticated %}
+  <div class="w3-bar-item" style="margin-left: 15px;">
+    <span style="color: antiquewhite;">Bienvenido <strong>{{ request.user.username }}</strong></span><br>
+  </div>
+  <button class="w3-bar-item w3-button w3-left login-btn " style="margin-bottom:10px;color:#f33d30;" onclick="showLogoutModal()">Logout</button>
+  {% else %}
+  <button class="w3-bar-item w3-button w3-left login-btn " style="margin-bottom:10px;color:#f33d30;" onclick="document.getElementById('loginModal').style.display='block'">Login</button>
+  {% endif %}
+  <a href="javascript:void(0)" onclick="w3_close()" class="w3-button w3-hide-large w3-display-topleft" style="width:100%;font-size:22px">Close Menu</a>
+  <div class="w3-container">
+    <h3 style="color:azure;"><b>INTRALOG<br>Metrics</b></h3>
+  </div>
+  <div class="w3-bar-block">
+    <a href="{% url 'home' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;margin-top:30px;">Home</a>
+    {% if request.user.is_authenticated %}
+      {% if request.user.is_management or request.user.is_superuser %}
+        <a href="{% url 'list_users' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Listar/eliminar usuarios</a>
+        <a href="{% url 'create_company' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Crear compañias</a>
+        <a href="{% url 'adminpanel' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: #f33d30;">Admin Panel</a>
+      {% endif %}
+      {% if request.user.is_superuser %}
+      {% endif %}
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block main_page %}
+<div class="w3-container" style="margin-top:50px" id="showcase">
+    <h1 class="w3-jumbo"><b>Administrador de bases de datos</b></h1>
+    <p>Por favor instruirse con el administrador de sistema antes de utilizar estas funciones</p>
+  </div>
+
+  <div class="w3-container" id="services" style="margin-top:75px">
+    <h1 class="w3-xxxlarge w3-text-red"><b>Poblador de base OMS</b></h1>
+    <hr style="width:50px;border:5px solid #f33d30" class="w3-round">
+    <p>Levanta el archivo matriz de OMS en la base de datos principal</p>
+    <p>
+    El archivo debe se un xlsx sin tablas ni formulas, y tener como minimo los siguientes campos y configuracion:
+
+    pedido = CharField(max_length=100)
+    flujo = CharField(max_length=10)
+    seller = ForeignKey(Company, on_delete=models.SET_NULL, related_name="orders", null=True)
+    sucursal = CharField(max_length=50)
+    estadoPedido = CharField(max_length=50)
+    fechaCreacion = DateTimeField()
+    fechaRecepcion = DateTimeField(blank=True, null=True)
+    fechaDespacho = DateTimeField(blank=True, null=True)
+    fechaEntrega = DateTimeField(blank=True, null=True)
+    lpn = CharField(max_length=100, unique=True)
+    estadoLpn = CharField(max_length=100)
+    provincia = CharField(max_length=100)
+    localidad = CharField(max_length=100)
+    zona = CharField(max_length=100)
+    trackingDistribucion = CharField(max_length=100, blank=True, null=True)
+    trackingTransporte = CharField(max_length=100, blank=True, null=True)
+    codigoPostal = CharField(max_length=10)
+    order_data = TextField(blank=True, null=True)
+    </p>
+    <button id="openModalButton" class="w3-button w3-blue">Importar data OMS</button>
+  </div>
+<!-- Modal for File Upload -->
+<div id="uploadModal" class="w3-modal">
+    <div class="w3-modal-content">
+        <div class="w3-container">
+            <span onclick="document.getElementById('uploadModal').style.display='none'"
+                  class="w3-button w3-display-topright">&times;</span>
+            <h3>Subir archivo Excel para actualizar estados</h3>
+            <form method="POST" enctype="multipart/form-data" action="{% url 'upload_oms_data' %}">
+                {% csrf_token %}
+                <input type="file" name="excel_file" accept=".xlsx, .xls" class="w3-input" required>
+                <button type="submit" class="w3-button w3-blue w3-margin-top">Subir</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Open modal on button click
+    document.getElementById('openModalButton').addEventListener('click', function() {
+        document.getElementById('uploadModal').style.display = 'block';
+    });
+</script>
+{% endblock %}

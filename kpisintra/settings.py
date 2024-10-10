@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'landingapp',
     'usersapp',
     'adminapp',
+    'dataapp',
 ]
 
 MIDDLEWARE = [

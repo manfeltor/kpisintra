@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
-from .forms import CustomUserCreationForm
+from .forms import CustomUserCreationForm, CompanyCreationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from .models import CustomUser
@@ -36,6 +36,20 @@ def create_user_view(request):
 
     return render(request, 'create_user.html', {'form': form})
 
+@login_required
+def create_company_view(request):
+    if not request.user.is_superuser:
+        return redirect('unauthorized')
+
+    if request.method == 'POST':
+        form = CompanyCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('home')  # Redirect to home or another relevant page after creating the user
+    else:
+        form = CompanyCreationForm()
+
+    return render(request, 'create_company.html', {'form': form})
 
 @login_required
 def user_list_view(request):

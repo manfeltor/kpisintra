@@ -4,3 +4,6 @@ from django.shortcuts import render
 
 def base(req):
     return render(req, "landing.html")
+
+def unauthorized(req):
+    return render(req, "unauthorized.html")

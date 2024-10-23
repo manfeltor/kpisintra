@@ -1,17 +1,16 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 import pandas as pd
-import os
 from usersapp.models import Company
 from dataapp.models import Order
 from .populateordermodelhelpers import parse_date
 import json
-from django.core.files.storage import FileSystemStorage
 from django.contrib.auth.decorators import login_required
+from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpResponse
 import openpyxl
 from io import BytesIO
 from django.db import transaction
-from django.core.files.storage import default_storage
+from django.contrib import messages
 
 # Create your views here.
 def adminpanel(req):
@@ -112,9 +111,9 @@ def process_orders_from_upload(request):
             status_messages.append(f"Error reading file: {e}")
 
         status_messages.append(f"Processing complete: {successful_orders} orders saved, {failed_orders} errors encountered.")
-        return render(request, 'process_orders.html', {'status_messages': status_messages})
+        return render(request, 'admin_panel.html', {'status_messages': status_messages})
 
-    return render(request, 'process_orders.html')
+    return render(request, 'admin_panel.html')
 
 
 def db_manager(req):
@@ -147,3 +146,14 @@ def download_template_xlsx(request):
         response = HttpResponse(buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = 'attachment; filename=template_oms.xlsx'
         return response
+    
+    
+@staff_member_required
+def delete_all_orders(request):
+    if request.method == "POST":
+        try:
+            Order.objects.all().delete()
+            messages.success(request, "All orders have been successfully deleted.")
+        except Exception as e:
+            messages.error(request, f"Error occurred while deleting orders: {e}")
+    return redirect('db_manager')

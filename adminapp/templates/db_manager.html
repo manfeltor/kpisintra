@@ -23,8 +23,6 @@
         <a href="{% url 'create_company' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Crear compañias</a>
         <a href="{% url 'adminpanel' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: #f33d30;">Admin Panel</a>
       {% endif %}
-      {% if request.user.is_superuser %}
-      {% endif %}
     {% endif %}
   </div>
 {% endblock %}
@@ -64,7 +62,17 @@
     </p>
     <button id="openModalButton" class="w3-button w3-blue">Importar data OMS</button>
     <a href="{% url 'download_template_xlsx' %}" class="w3-button w3-green w3-margin-left">Descargar template</a>
-  </div>
+    {% if request.user.is_staff %}
+      <form method="POST" action="{% url 'delete_all_orders' %}" onsubmit="showDeletingModal()">
+        {% csrf_token %}
+        <button type="submit" class="w3-button w3-red w3-margin-top" 
+          onclick="return confirm('Esta seguro de querer realizar esta transaccion? una vez realizada es irreversible.')">
+          Delete All Orders
+        </button>
+      </form>
+    {% endif %}
+</div>
+
 <!-- Modal for File Upload -->
 <div id="uploadModal" class="w3-modal">
     <div class="w3-modal-content">
@@ -80,11 +88,50 @@
         </div>
     </div>
 </div>
+<!-- Modal for Deleting Data -->
+<div id="deletingModal" class="w3-modal">
+  <div class="w3-modal-content w3-card-4 w3-animate-top">
+      <div class="w3-container">
+          <span class="w3-button w3-xlarge w3-hover-red w3-display-topright">&times;</span>
+          <h3>Deleting data...</h3>
+          <p>Please wait while the data is being deleted. This may take a few moments.</p>
+      </div>
+  </div>
+</div>
+
+<!-- Modal for Showing Data Deleted Message -->
+{% if messages %}
+<div id="deletedModal" class="w3-modal" style="display: block;">
+  <div class="w3-modal-content w3-card-4 w3-animate-top">
+      <div class="w3-container">
+          <span class="w3-button w3-xlarge w3-hover-red w3-display-topright">&times;</span>
+          <h3>Data Deleted</h3>
+          <p>All orders have been successfully deleted.</p>
+      </div>
+  </div>
+</div>
+{% endif %}
 
 <script>
     // Open modal on button click
     document.getElementById('openModalButton').addEventListener('click', function() {
         document.getElementById('uploadModal').style.display = 'block';
     });
+</script>
+<script>
+  // Show "Deleting data..." modal
+  function showDeletingModal() {
+      document.getElementById('deletingModal').style.display = 'block';
+  }
+
+  // Auto-close the "Data Deleted" modal after 3 seconds
+  window.onload = function() {
+      const deletedModal = document.getElementById('deletedModal');
+      if (deletedModal) {
+          setTimeout(function() {
+              deletedModal.style.display = 'none';
+          }, 3000);  // Close modal after 3 seconds
+      }
+  };
 </script>
 {% endblock %}

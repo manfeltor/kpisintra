@@ -142,7 +142,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 PRODUCTION = os.getenv('PRODUCTION', 'False').lower() in ['true', '1']
 
-FILE_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880
 
 if PRODUCTION:
     # Use Google Cloud Storage in production

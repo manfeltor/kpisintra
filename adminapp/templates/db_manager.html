@@ -31,37 +31,22 @@
 <div class="w3-container" style="margin-top:50px" id="showcase">
     <h1 class="w3-jumbo"><b>Administrador de bases de datos</b></h1>
     <p>Por favor instruirse con el administrador de sistema antes de utilizar estas funciones</p>
-  </div>
+</div>
 
-  <div class="w3-container" id="services" style="margin-top:75px">
+<div class="w3-container" id="services" style="margin-top:75px">
     <h1 class="w3-xxxlarge w3-text-red"><b>Poblador de base OMS</b></h1>
     <hr style="width:50px;border:5px solid #f33d30" class="w3-round">
     <p>Levanta el archivo matriz de OMS en la base de datos principal</p>
-    <p>
-    El archivo debe ser un xlsx sin tablas ni formulas, y tener como minimo los siguientes campos y configuracion:
 
-    <ul>
-      <li>pedido = CharField(max_length=100)
-      <li>flujo = CharField(max_length=10)
-      <li>seller = ForeignKey(Company, on_delete=models.SET_NULL, related_name="orders", null=True)
-      <li>sucursal = CharField(max_length=50)
-      <li>estadoPedido = CharField(max_length=50)
-      <li>fechaCreacion = DateTimeField()
-      <li>fechaRecepcion = DateTimeField(blank=True, null=True)
-      <li>fechaDespacho = DateTimeField(blank=True, null=True)
-      <li>fechaEntrega = DateTimeField(blank=True, null=True)
-      <li>lpn = CharField(max_length=100, unique=True)
-      <li>estadoLpn = CharField(max_length=100)
-      <li>provincia = CharField(max_length=100)
-      <li>localidad = CharField(max_length=100)
-      <li>zona = CharField(max_length=100)
-      <li>trackingDistribucion = CharField(max_length=100, blank=True, null=True)
-      <li>trackingTransporte = CharField(max_length=100, blank=True, null=True)
-      <li>codigoPostal = CharField(max_length=10)
-    </ul>
-    </p>
-    <button id="openModalButton" class="w3-button w3-blue">Importar data OMS</button>
+    <!-- Upload Form -->
+    <form id="uploadForm" method="POST" enctype="multipart/form-data" action="{% url 'upload_oms_data' %}">
+      {% csrf_token %}
+      <input type="file" name="excel_file" id="excel_file" required>
+      <button type="submit" class="w3-button w3-blue w3-margin-top" onclick="showProcessingModal()">Upload</button>
+    </form>
+
     <a href="{% url 'download_template_xlsx' %}" class="w3-button w3-green w3-margin-left">Descargar template</a>
+
     {% if request.user.is_staff %}
       <form method="POST" action="{% url 'delete_all_orders' %}" onsubmit="showDeletingModal()">
         {% csrf_token %}
@@ -73,65 +58,55 @@
     {% endif %}
 </div>
 
-<!-- Modal for File Upload -->
-<div id="uploadModal" class="w3-modal">
-    <div class="w3-modal-content">
-        <div class="w3-container">
-            <span onclick="document.getElementById('uploadModal').style.display='none'"
-                  class="w3-button w3-display-topright">&times;</span>
-            <h3>Subir archivo Excel para actualizar estados</h3>
-            <form method="POST" enctype="multipart/form-data" action="{% url 'upload_oms_data' %}">
-                {% csrf_token %}
-                <input type="file" name="excel_file" accept=".xlsx, .xls" class="w3-input" required>
-                <button type="submit" class="w3-button w3-blue w3-margin-top">Subir</button>
-            </form>
-        </div>
-    </div>
+<!-- Modal for Processing -->
+<div id="processingModal" class="w3-modal">
+  <div class="w3-modal-content w3-card-4 w3-animate-top">
+      <div class="w3-container">
+          <span class="w3-button w3-xlarge w3-hover-red w3-display-topright">&times;</span>
+          <h3>Processing...</h3>
+          <p>Please wait while the file is being processed.</p>
+      </div>
+  </div>
 </div>
+
 <!-- Modal for Deleting Data -->
 <div id="deletingModal" class="w3-modal">
   <div class="w3-modal-content w3-card-4 w3-animate-top">
       <div class="w3-container">
-          <span class="w3-button w3-xlarge w3-hover-red w3-display-topright">&times;</span>
+          <span class="w3-button w3-xlarge w3-hover-red w3-display-topright" onclick="document.getElementById('deletingModal').style.display='none'">&times;</span>
           <h3>Deleting data...</h3>
           <p>Please wait while the data is being deleted. This may take a few moments.</p>
       </div>
   </div>
 </div>
 
-<!-- Modal for Showing Data Deleted Message -->
+<!-- Modal for Showing Success or Error -->
 {% if messages %}
-<div id="deletedModal" class="w3-modal" style="display: block;">
+<div id="feedbackModal" class="w3-modal" style="display: block;">
   <div class="w3-modal-content w3-card-4 w3-animate-top">
       <div class="w3-container">
-          <span class="w3-button w3-xlarge w3-hover-red w3-display-topright">&times;</span>
-          <h3>Data Deleted</h3>
-          <p>All orders have been successfully deleted.</p>
+          <span class="w3-button w3-xlarge w3-hover-red w3-display-topright" onclick="document.getElementById('feedbackModal').style.display = 'none'">&times;</span>
+          {% for message in messages %}
+              {% if message.tags == 'success' %}
+                  <h3 class="w3-text-green">Success</h3>
+                  <p>{{ message }}</p>
+              {% else %}
+                  <h3 class="w3-text-red">Error</h3>
+                  <p>{{ message }}</p>
+              {% endif %}
+          {% endfor %}
       </div>
   </div>
 </div>
 {% endif %}
 
 <script>
-    // Open modal on button click
-    document.getElementById('openModalButton').addEventListener('click', function() {
-        document.getElementById('uploadModal').style.display = 'block';
-    });
-</script>
-<script>
-  // Show "Deleting data..." modal
-  function showDeletingModal() {
-      document.getElementById('deletingModal').style.display = 'block';
-  }
+    function showProcessingModal() {
+        document.getElementById('processingModal').style.display = 'block';
+    }
 
-  // Auto-close the "Data Deleted" modal after 3 seconds
-  window.onload = function() {
-      const deletedModal = document.getElementById('deletedModal');
-      if (deletedModal) {
-          setTimeout(function() {
-              deletedModal.style.display = 'none';
-          }, 3000);  // Close modal after 3 seconds
-      }
-  };
+    function showDeletingModal() {
+        document.getElementById('deletingModal').style.display = 'block';
+    }
 </script>
 {% endblock %}

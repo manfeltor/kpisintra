@@ -11,6 +11,8 @@ import openpyxl
 from io import BytesIO
 from django.db import transaction
 from django.contrib import messages
+import traceback
+from django.http import JsonResponse
 
 # Create your views here.
 def adminpanel(req):
@@ -26,10 +28,15 @@ def process_orders_from_upload(request):
         batchzise = 1000
 
         # Get the uploaded file (single file)
-        uploaded_file = request.FILES['excel_file']
+        # uploaded_file = request.FILES['excel_file']
 
         # Read the uploaded file into memory using BytesIO (works for both GCS and local)
         try:
+            uploaded_file = request.FILES['excel_file']
+
+            # Ensure the uploaded file is an Excel file
+            if not uploaded_file.name.endswith(('.xlsx', '.xls')):
+                raise ValueError('Unsupported file type. Please upload an Excel file.')
             excel_file = uploaded_file.read()
             excel_io = BytesIO(excel_file)
             df = pd.read_excel(excel_io)
@@ -107,14 +114,22 @@ def process_orders_from_upload(request):
                 'localidad', 'zona', 'trackingDistribucion', 'trackingTransporte', 'codigoPostal', 'order_data'
             ], batch_size=batchzise)
 
-        except Exception as e:
-            status_messages.append(f"Error reading file: {e}")
+            messages.success(request, f"Processing complete: {successful_orders} orders saved, {failed_orders} errors encountered.")
 
-        status_messages.append(f"Processing complete: {successful_orders} orders saved, {failed_orders} errors encountered.")
-        return render(request, 'admin_panel.html', {'status_messages': status_messages})
+        
+        except Exception as e:
+            tb = traceback.format_exc()
+            messages.error(request, f"Error reading file: {e} aaaaa {tb}")
+            
+
+        # status_messages.append(f"Processing complete: {successful_orders} orders saved, {failed_orders} errors encountered.")
+        # messages.success(request, f"Processing complete: {successful_orders} orders saved, {failed_orders} errors encountered.")
+
+        return render(request, 'admin_panel.html')
+        # return JsonResponse({'message': 'File uploaded successfully', 'success': True})
 
     return render(request, 'admin_panel.html')
-
+    
 
 def db_manager(req):
     return render(req, "db_manager.html")

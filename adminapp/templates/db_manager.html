@@ -36,23 +36,48 @@
 <div class="w3-container" id="services" style="margin-top:75px">
     <h1 class="w3-xxxlarge w3-text-red"><b>Poblador de base OMS</b></h1>
     <hr style="width:50px;border:5px solid #f33d30" class="w3-round">
-    <p>Levanta el archivo matriz de OMS en la base de datos principal</p>
+    <p>Levanta el archivo matriz de OMS en la base de datos principal con la siguiente config minima:</p>
+    <ul>
+      <li>pedido = CharField(max_length=100)
+      <li>flujo = CharField(max_length=10)
+      <li>seller = ForeignKey(Company, on_delete=models.SET_NULL, related_name="orders", null=True)
+      <li>sucursal = CharField(max_length=50)
+      <li>estadoPedido = CharField(max_length=50)
+      <li>fechaCreacion = DateTimeField()
+      <li>fechaRecepcion = DateTimeField(blank=True, null=True)
+      <li>fechaDespacho = DateTimeField(blank=True, null=True)
+      <li>fechaEntrega = DateTimeField(blank=True, null=True)
+      <li>lpn = CharField(max_length=100, unique=True)
+      <li>estadoLpn = CharField(max_length=100)
+      <li>provincia = CharField(max_length=100)
+      <li>localidad = CharField(max_length=100)
+      <li>zona = CharField(max_length=100)
+      <li>trackingDistribucion = CharField(max_length=100, blank=True, null=True)
+      <li>trackingTransporte = CharField(max_length=100, blank=True, null=True)
+      <li>codigoPostal = CharField(max_length=10)
+    </ul>
 
     <!-- Upload Form -->
     <form id="uploadForm" method="POST" enctype="multipart/form-data" action="{% url 'upload_oms_data' %}">
       {% csrf_token %}
       <input type="file" name="excel_file" id="excel_file" required>
-      <button type="submit" class="w3-button w3-blue w3-margin-top" onclick="showProcessingModal()">Upload</button>
+      <button type="submit" class="w3-button w3-blue w3-margin-top" onclick="showProcessingModal()">Subir data</button>
     </form>
 
-    <a href="{% url 'download_template_xlsx' %}" class="w3-button w3-green w3-margin-left">Descargar template</a>
+    <h1 class="w3-xxxlarge w3-text-red" style="margin-top:100px"><b>Template de carga basica OMS</b></h1>
+    <hr style="width:50px;border:5px solid #f33d30" class="w3-round">
+    <p>Descarga el template basico minimo de carga con el siguiente boton:</p>
+      <a href="{% url 'download_template_xlsx' %}" class="w3-button w3-green w3-margin-left">Descargar template</a>
 
+    <h1 class="w3-xxxlarge w3-text-red" style="margin-top:100px"><b>Limpiador de base </b></h1>
+    <hr style="width:50px;border:5px solid #f33d30" class="w3-round">
+    <p>USAR A DISCRECION!!!! Este boton elimina TODOS los registros de la base de datos de OMS:</p>  
     {% if request.user.is_staff %}
       <form method="POST" action="{% url 'delete_all_orders' %}" onsubmit="showDeletingModal()">
         {% csrf_token %}
         <button type="submit" class="w3-button w3-red w3-margin-top" 
           onclick="return confirm('Esta seguro de querer realizar esta transaccion? una vez realizada es irreversible.')">
-          Delete All Orders
+          Eliminar todas las ordenes
         </button>
       </form>
     {% endif %}

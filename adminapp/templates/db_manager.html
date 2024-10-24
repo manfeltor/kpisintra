@@ -20,7 +20,7 @@
     {% if request.user.is_authenticated %}
       {% if request.user.is_management or request.user.is_superuser %}
         <a href="{% url 'list_users' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Listar/eliminar usuarios</a>
-        <a href="{% url 'create_company' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Crear compañias</a>
+        <a href="#" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Modificar compañias</a>
         <a href="{% url 'adminpanel' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: #f33d30;">Admin Panel</a>
       {% endif %}
     {% endif %}
@@ -28,12 +28,14 @@
 {% endblock %}
 
 {% block main_page %}
-<div class="w3-container" style="margin-top:50px" id="showcase">
+<div class="w3-container" style="margin-top:50px; margin-bottom: 50px;" id="showcase">
     <h1 class="w3-jumbo"><b>Administrador de bases de datos</b></h1>
     <p>Por favor instruirse con el administrador de sistema antes de utilizar estas funciones</p>
 </div>
 
-<div class="w3-container" id="services" style="margin-top:75px">
+<h1 class="w3-jumbo"><b>OMS</b></h1>
+
+<div class="w3-container" id="services" style="margin-top:10px; margin-bottom: 100px;">
     <h1 class="w3-xxxlarge w3-text-red"><b>Poblador de base OMS</b></h1>
     <hr style="width:50px;border:5px solid #f33d30" class="w3-round">
     <p>Levanta el archivo matriz de OMS en la base de datos principal con la siguiente config minima:</p>
@@ -57,19 +59,19 @@
       <li>codigoPostal = CharField(max_length=10)
     </ul>
 
-    <!-- Upload Form -->
+    <!-- Upload Form oms -->
     <form id="uploadForm" method="POST" enctype="multipart/form-data" action="{% url 'upload_oms_data' %}">
       {% csrf_token %}
-      <input type="file" name="excel_file" id="excel_file" required>
-      <button type="submit" class="w3-button w3-blue w3-margin-top" onclick="showProcessingModal()">Subir data</button>
+      <input type="file" name="oms_excel_file" id="oms_excel_file" required>
+      <button type="submit" class="w3-button w3-blue w3-margin-top" onclick="return checkFileAndSubmitOms()">Subir data</button>
     </form>
 
-    <h1 class="w3-xxxlarge w3-text-red" style="margin-top:100px"><b>Template de carga basica OMS</b></h1>
+    <h1 class="w3-xxxlarge w3-text-red" style="margin-top:50px"><b>Template de carga basica OMS</b></h1>
     <hr style="width:50px;border:5px solid #f33d30" class="w3-round">
     <p>Descarga el template basico minimo de carga con el siguiente boton:</p>
-      <a href="{% url 'download_template_xlsx' %}" class="w3-button w3-green w3-margin-left">Descargar template</a>
+      <a href="{% url 'download_template_xlsx' %}" class="w3-button w3-green">Descargar template</a>
 
-    <h1 class="w3-xxxlarge w3-text-red" style="margin-top:100px"><b>Limpiador de base </b></h1>
+    <h1 class="w3-xxxlarge w3-text-red" style="margin-top:50px"><b>Limpiador de base </b></h1>
     <hr style="width:50px;border:5px solid #f33d30" class="w3-round">
     <p>USAR A DISCRECION!!!! Este boton elimina TODOS los registros de la base de datos de OMS:</p>  
     {% if request.user.is_staff %}
@@ -82,6 +84,37 @@
       </form>
     {% endif %}
 </div>
+
+<h1 class="w3-jumbo"><b>CODIGOS POSTALES</b></h1>
+
+<div class="w3-container" id="services" style="margin-top:10px">
+  <h1 class="w3-xxxlarge w3-text-red"><b>Poblador de Códigos Postales</b></h1>
+  <hr style="width:50px;border:5px solid #f33d30" class="w3-round">
+  <p>Levanta el archivo de Códigos Postales en la base de datos principal</p>
+  <p>
+  El archivo debe ser un xlsx sin tablas ni fórmulas, y tener como mínimo los siguientes campos:
+  <ul>
+      <li>cp = CharField(max_length=4, unique=True)</li>
+      <li>localidad = CharField(max_length=100)</li>
+      <li>partido = CharField(max_length=100)</li>
+      <li>provincia = CharField(max_length=100)</li>
+      <li>region = CharField(max_length=100)</li>
+      <li>distrito = CharField(max_length=50)</li>
+      <li>amba_intralog = BooleanField</li>
+      <li>flex = BooleanField</li>
+  </ul>
+  </p>
+  <!-- Upload Form oms -->
+  <form id="uploadForm" method="POST" enctype="multipart/form-data" action="{% url 'upload_postal_codes' %}">
+    {% csrf_token %}
+    <input type="file" name="cp_excel_file" id="cp_excel_file" required>
+    <button type="submit" class="w3-button w3-blue w3-margin-top" onclick="return checkFileAndSubmitCp()">Subir data</button>
+  </form>
+
+  <h1 class="w3-xxxlarge w3-text-red" style="margin-top:50px"><b>Template de carga basica Codigos Postales</b></h1>
+    <hr style="width:50px;border:5px solid #f33d30" class="w3-round">
+    <p>Descarga el template basico minimo de carga con el siguiente boton:</p>
+      <a href="{% url 'download_cp_template_xlsx' %}" class="w3-button w3-green">Descargar template</a>
 
 <!-- Modal for Processing -->
 <div id="processingModal" class="w3-modal">
@@ -127,11 +160,44 @@
 
 <script>
     function showProcessingModal() {
-        document.getElementById('processingModal').style.display = 'block';
+        const modal = document.getElementById('processingModal');
+        if (modal) {
+            modal.style.display = 'block';
+        }
     }
 
     function showDeletingModal() {
         document.getElementById('deletingModal').style.display = 'block';
     }
+
+    function checkFileAndSubmitOms() {
+      const fileInput = document.getElementById('oms_excel_file');
+
+      // Check if a file has been selected
+      if (!fileInput.value) {
+          alert("Por favor, seleccione un archivo antes de subir a la base de oms.");
+          return false;  // Prevent the form submission and modal from showing
+      }
+
+      // Show the processing modal if a file is selected
+      showProcessingModal();
+      return true;  // Allow form submission
+    }
+
+    function checkFileAndSubmitCp() {
+      const fileInput = document.getElementById('cp_excel_file');
+
+      // Check if a file has been selected
+      if (!fileInput.value) {
+          alert("Por favor, seleccione un archivo antes de subir a la base de cp.");
+          return false;  // Prevent the form submission and modal from showing
+      }
+
+      // Show the processing modal if a file is selected
+      showProcessingModal();
+      return true;  // Allow form submission
+    }
 </script>
+
+
 {% endblock %}

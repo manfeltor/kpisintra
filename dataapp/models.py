@@ -24,7 +24,6 @@ class Order(models.Model):
     codigoPostal = models.CharField(max_length=10)
     order_data = models.TextField(blank=True, null=True)  # Store as serialized dict string
 
-
     def __str__(self):
         return f"{self.seller.name} - {self.pedido} - {self.lpn}"
     
@@ -32,3 +31,17 @@ class Order(models.Model):
     @property
     def customer_data_as_dict(self):
         return json.loads(self.order_data) if self.order_data else {}
+    
+
+class PostalCodes(models.Model):
+    cp = models.CharField(max_length=4, unique=True)
+    localidad = models.CharField(max_length=100)
+    partido = models.CharField(max_length=100)
+    provincia = models.CharField(max_length=100)
+    region = models.CharField(max_length=100)
+    distrito = models.CharField(max_length=50)
+    amba_intralog = models.BooleanField(default=False)
+    flex = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.cp

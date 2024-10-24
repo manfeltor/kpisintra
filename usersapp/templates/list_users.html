@@ -20,7 +20,7 @@
       {% if request.user.is_management or request.user.is_superuser %}
         <a href="{% url 'create_user' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Crear usuarios</a>
         <a href="{% url 'adminpanel' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: #f33d30;">Admin Panel</a>
-        <a href="{% url 'create_company' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Crear compañias</a>
+        <a href="#" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Modificar compañias</a>
         
       {% endif %}
       {% if request.user.is_superuser %}

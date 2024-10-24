@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 import pandas as pd
 from usersapp.models import Company
-from dataapp.models import Order
+from dataapp.models import Order, PostalCodes
 from .populateordermodelhelpers import parse_date
 import json
 from django.contrib.auth.decorators import login_required
@@ -12,7 +12,6 @@ from io import BytesIO
 from django.db import transaction
 from django.contrib import messages
 import traceback
-from django.http import JsonResponse
 
 # Create your views here.
 def adminpanel(req):
@@ -119,16 +118,16 @@ def process_orders_from_upload(request):
         
         except Exception as e:
             tb = traceback.format_exc()
-            messages.error(request, f"Error reading file: {e} aaaaa {tb}")
+            messages.error(request, f"Error reading file: {e} trace: {tb}")
             
 
         # status_messages.append(f"Processing complete: {successful_orders} orders saved, {failed_orders} errors encountered.")
         # messages.success(request, f"Processing complete: {successful_orders} orders saved, {failed_orders} errors encountered.")
 
-        return render(request, 'admin_panel.html')
+        return render(request, 'db_manager.html')
         # return JsonResponse({'message': 'File uploaded successfully', 'success': True})
 
-    return render(request, 'admin_panel.html')
+    return render(request, 'db_manager.html')
     
 
 def db_manager(req):
@@ -136,7 +135,7 @@ def db_manager(req):
 
 
 def download_template_xlsx(request):
-    # Create a new Excel workbook and sheet
+    # Create a new Excel workbook and sheet for oms submissions
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Template"
@@ -172,3 +171,116 @@ def delete_all_orders(request):
         except Exception as e:
             messages.error(request, f"Error occurred while deleting orders: {e}")
     return redirect('db_manager')
+
+
+@login_required
+@staff_member_required
+def upload_postal_codes(request):
+    if request.method == 'POST' and request.FILES.get('excel_file'):
+        successful_inserts = 0
+        failed_inserts = 0
+        batch_size = 1000
+
+        # Get the uploaded file (single file)
+        uploaded_file = request.FILES['excel_file']
+
+        # Read the uploaded file into memory using BytesIO (works for both GCS and local)
+        try:
+            excel_file = uploaded_file.read()
+            excel_io = BytesIO(excel_file)
+
+            # Validate if the file is an actual Excel file
+            try:
+                df = pd.read_excel(excel_io)
+            except Exception as e:
+                messages.error(request, f"El archivo subido no es válido. Asegúrese de que es un archivo Excel. Error: {str(e)}")
+                return render(request, 'db_manager.html')
+
+            # Ensure that required columns exist
+            required_columns = ['cp', 'localidad', 'partido', 'provincia', 'region', 'distrito', 'amba_intralog', 'flex']
+            missing_columns = [col for col in required_columns if col not in df.columns]
+            if missing_columns:
+                messages.error(request, f"Faltan las siguientes columnas obligatorias en el archivo: {', '.join(missing_columns)}")
+                return render(request, 'db_manager.html')
+
+            postal_codes_to_create = []
+            postal_codes_to_update = []
+
+            # Gather all postal codes to check for existing ones
+            existing_cps = set(PostalCodes.objects.filter(cp__in=df['cp']).values_list('cp', flat=True))
+
+            with transaction.atomic():
+                for _, row in df.iterrows():
+                    try:
+                        # Check if the postal code already exists
+                        if row['cp'] in existing_cps:
+                            # Update existing postal code
+                            postal_code = PostalCodes.objects.get(cp=row['cp'])
+                            postal_code.localidad = row['localidad']
+                            postal_code.partido = row['partido']
+                            postal_code.provincia = row['provincia']
+                            postal_code.region = row['region']
+                            postal_code.distrito = row['distrito']
+                            postal_code.amba_intralog = row['amba_intralog']
+                            postal_code.flex = row['flex']
+                            postal_codes_to_update.append(postal_code)
+                        else:
+                            # Create a new postal code entry
+                            postal_codes_to_create.append(PostalCodes(
+                                cp=row['cp'],
+                                localidad=row['localidad'],
+                                partido=row['partido'],
+                                provincia=row['provincia'],
+                                region=row['region'],
+                                distrito=row['distrito'],
+                                amba_intralog=row['amba_intralog'],
+                                flex=row['flex']
+                            ))
+                        successful_inserts += 1
+                    except Exception as e:
+                        failed_inserts += 1
+                        # Log detailed error if needed
+                        print(f"Error processing row {row['cp']}: {e}")
+
+            # Bulk create and update postal codes
+            PostalCodes.objects.bulk_create(postal_codes_to_create, batch_size=batch_size)
+            PostalCodes.objects.bulk_update(postal_codes_to_update, [
+                'localidad', 'partido', 'provincia', 'region', 'distrito', 'amba_intralog', 'flex'
+            ], batch_size=batch_size)
+
+            messages.success(request, f"Procesamiento completo: {successful_inserts} cps procesados, {failed_inserts} inserciones fallidas.")
+
+        except Exception as e:
+            tb = traceback.format_exc()
+            messages.error(request, f"Error procesando el archivo: {e}, trace: {tb}")
+            return render(request, 'db_manager.html')
+
+        return render(request, 'db_manager.html')
+
+    return render(request, 'db_manager.html')
+
+
+def download_cp_template_xlsx(request):
+    # Create a new Excel workbook and sheet for oms submissions
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Template"
+
+    # Define the column headers
+    headers = [
+        "cp", "localidad", "partido", "provincia", "region",
+        "distrito", "amba_intralog", "flex"
+    ]
+
+    # Add the headers to the first row of the sheet
+    ws.append(headers)
+
+    # Save the workbook to a BytesIO object (in memory)
+    with BytesIO() as buffer:
+        wb.save(buffer)
+        buffer.seek(0)  # Rewind the buffer
+
+        # Create the response and send the file for download
+        response = HttpResponse(buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename=template_cp.xlsx'
+        return response

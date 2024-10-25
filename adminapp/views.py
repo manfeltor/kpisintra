@@ -20,7 +20,7 @@ def adminpanel(req):
 # POPULATE ORDER MODEL Main function to process Excel files and populate Order model
 @login_required
 def process_orders_from_upload(request):
-    if request.method == 'POST' and request.FILES.get('excel_file'):
+    if request.method == 'POST' and request.FILES.get('oms_excel_file'):
         status_messages = []
         successful_orders = 0
         failed_orders = 0
@@ -31,7 +31,7 @@ def process_orders_from_upload(request):
 
         # Read the uploaded file into memory using BytesIO (works for both GCS and local)
         try:
-            uploaded_file = request.FILES['excel_file']
+            uploaded_file = request.FILES['oms_excel_file']
 
             # Ensure the uploaded file is an Excel file
             if not uploaded_file.name.endswith(('.xlsx', '.xls')):
@@ -176,16 +176,16 @@ def delete_all_orders(request):
 @login_required
 @staff_member_required
 def upload_postal_codes(request):
-    if request.method == 'POST' and request.FILES.get('excel_file'):
+    if request.method == 'POST' and request.FILES.get('cp_excel_file'):
         successful_inserts = 0
         failed_inserts = 0
         batch_size = 1000
 
         # Get the uploaded file (single file)
-        uploaded_file = request.FILES['excel_file']
 
         # Read the uploaded file into memory using BytesIO (works for both GCS and local)
         try:
+            uploaded_file = request.FILES['cp_excel_file']
             excel_file = uploaded_file.read()
             excel_io = BytesIO(excel_file)
 
@@ -254,9 +254,9 @@ def upload_postal_codes(request):
             tb = traceback.format_exc()
             messages.error(request, f"Error procesando el archivo: {e}, trace: {tb}")
             return render(request, 'db_manager.html')
-
+        
         return render(request, 'db_manager.html')
-
+    print(request.FILES)
     return render(request, 'db_manager.html')
 
 

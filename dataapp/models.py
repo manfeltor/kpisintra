@@ -6,6 +6,13 @@ from django.core.validators import MaxValueValidator
 #TODO double check for fields config
 
 
+class SRTrackingData(models.Model):
+    trackingDistribucion = models.CharField(max_length=100, unique=True)
+    otherData1 = models.CharField(max_length=100)
+    otherData2 = models.CharField(max_length=100)
+    otherData3 = models.CharField(max_length=100)
+
+
 class PostalCodes(models.Model):
     cp = models.CharField(max_length=4, unique=True)
     localidad = models.CharField(max_length=100)
@@ -36,7 +43,8 @@ class Order(models.Model):
     provincia = models.CharField(max_length=100)
     localidad = models.CharField(max_length=100)
     zona = models.CharField(max_length=100)
-    trackingDistribucion = models.CharField(max_length=100, blank=True, null=True)
+    # trackingDistribucion = models.CharField(max_length=100, blank=True, null=True)
+    trackingDistribucion = models.ForeignKey(SRTrackingData, on_delete=models.CASCADE, related_name="tracking_distribucion", null=True, blank=True)
     trackingTransporte = models.CharField(max_length=100, blank=True, null=True)
     codigoPostaltxt = models.CharField(max_length=10)
     codigoPostal = models.ForeignKey(PostalCodes, on_delete=models.SET_NULL, related_name="postal_codes", null=True)

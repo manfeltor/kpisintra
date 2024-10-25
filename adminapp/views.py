@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 import pandas as pd
 from usersapp.models import Company
-from dataapp.models import Order, PostalCodes
+from dataapp.models import Order, PostalCodes, SRTrackingData
 from .populateordermodelhelpers import parse_date
 import json
 from django.contrib.auth.decorators import login_required
@@ -61,6 +61,12 @@ def process_orders_from_upload(request):
 
                         seller_name = row['seller']
                         company, _ = Company.objects.get_or_create(name=seller_name)
+
+                        if row.get('trackingDistribucion') not in ['', None]:
+                            tracking_distribucion = row.get('trackingDistribucion')
+                            tracking_data, created = SRTrackingData.objects.get_or_create(
+                                trackingDistribucion=tracking_distribucion
+                            )
         
                         postal_code_xlsx = row.get('codigoPostal')
                         try:
@@ -85,7 +91,7 @@ def process_orders_from_upload(request):
                             order.provincia = row['provincia']
                             order.localidad = row['localidad']
                             order.zona = row['zona']
-                            order.trackingDistribucion = row.get('trackingDistribucion', '')
+                            order.trackingDistribucion = tracking_data
                             order.trackingTransporte = row.get('trackingTransporte', '')
                             order.codigoPostal = postal_code_model
                             order.order_data = row_json
@@ -107,7 +113,7 @@ def process_orders_from_upload(request):
                                 provincia=row['provincia'],
                                 localidad=row['localidad'],
                                 zona=row['zona'],
-                                trackingDistribucion=row.get('trackingDistribucion', ''),
+                                trackingDistribucion=tracking_data,
                                 trackingTransporte=row.get('trackingTransporte', ''),
                                 codigoPostal=postal_code_model,
                                 order_data=row_json

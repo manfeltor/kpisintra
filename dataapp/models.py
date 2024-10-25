@@ -1,8 +1,25 @@
 from django.db import models
 from usersapp.models import Company
 import json
+from django.core.validators import MaxValueValidator
 
 #TODO double check for fields config
+
+
+class PostalCodes(models.Model):
+    cp = models.CharField(max_length=4, unique=True)
+    localidad = models.CharField(max_length=100)
+    partido = models.CharField(max_length=100)
+    provincia = models.CharField(max_length=100)
+    region = models.CharField(max_length=100)
+    distrito = models.CharField(max_length=50)
+    amba_intralog = models.BooleanField(default=False)
+    flex = models.BooleanField(default=False)
+    dias_limite = models.PositiveIntegerField(validators=[MaxValueValidator(99)])
+
+    def __str__(self):
+        return self.cp
+
 
 class Order(models.Model):
     pedido = models.CharField(max_length=100)
@@ -21,7 +38,8 @@ class Order(models.Model):
     zona = models.CharField(max_length=100)
     trackingDistribucion = models.CharField(max_length=100, blank=True, null=True)
     trackingTransporte = models.CharField(max_length=100, blank=True, null=True)
-    codigoPostal = models.CharField(max_length=10)
+    codigoPostaltxt = models.CharField(max_length=10)
+    codigoPostal = models.ForeignKey(PostalCodes, on_delete=models.SET_NULL, related_name="postal_codes", null=True)
     order_data = models.TextField(blank=True, null=True)  # Store as serialized dict string
 
     def __str__(self):
@@ -33,15 +51,3 @@ class Order(models.Model):
         return json.loads(self.order_data) if self.order_data else {}
     
 
-class PostalCodes(models.Model):
-    cp = models.CharField(max_length=4, unique=True)
-    localidad = models.CharField(max_length=100)
-    partido = models.CharField(max_length=100)
-    provincia = models.CharField(max_length=100)
-    region = models.CharField(max_length=100)
-    distrito = models.CharField(max_length=50)
-    amba_intralog = models.BooleanField(default=False)
-    flex = models.BooleanField(default=False)
-
-    def __str__(self):
-        return self.cp

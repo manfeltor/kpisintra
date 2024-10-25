@@ -71,7 +71,7 @@
     <p>Descarga el template basico minimo de carga con el siguiente boton:</p>
       <a href="{% url 'download_template_xlsx' %}" class="w3-button w3-green">Descargar template</a>
 
-    <h1 class="w3-xxxlarge w3-text-red" style="margin-top:50px"><b>Limpiador de base </b></h1>
+    <h1 class="w3-xxxlarge w3-text-red" style="margin-top:50px"><b>Limpiador de base OMS</b></h1>
     <hr style="width:50px;border:5px solid #f33d30" class="w3-round">
     <p>USAR A DISCRECION!!!! Este boton elimina TODOS los registros de la base de datos de OMS:</p>  
     {% if request.user.is_staff %}
@@ -102,9 +102,10 @@
       <li>distrito = CharField(max_length=50)</li>
       <li>amba_intralog = BooleanField</li>
       <li>flex = BooleanField</li>
+      <li>dias_limite = PositiveIntegerField(max=99)</li>
   </ul>
   </p>
-  <!-- Upload Form oms -->
+  <!-- Upload Form postalcode -->
   <form id="uploadForm" method="POST" enctype="multipart/form-data" action="{% url 'upload_postal_codes' %}">
     {% csrf_token %}
     <input type="file" name="cp_excel_file" id="cp_excel_file" required>
@@ -115,6 +116,21 @@
     <hr style="width:50px;border:5px solid #f33d30" class="w3-round">
     <p>Descarga el template basico minimo de carga con el siguiente boton:</p>
       <a href="{% url 'download_cp_template_xlsx' %}" class="w3-button w3-green">Descargar template</a>
+
+      <h1 class="w3-xxxlarge w3-text-red" style="margin-top:50px"><b>Limpiador de base codigos postales</b></h1>
+      <hr style="width:50px;border:5px solid #f33d30" class="w3-round">
+      <p>USAR A DISCRECION!!!! Este boton elimina TODOS los registros de la base de datos de codigo postal:</p>  
+      {% if request.user.is_staff %}
+        <form method="POST" action="{% url 'delete_all_orders_cp' %}" onsubmit="showDeletingModal()">
+          {% csrf_token %}
+          <button type="submit" class="w3-button w3-red w3-margin-top" 
+            onclick="return confirm('Esta seguro de querer realizar esta transaccion? una vez realizada es irreversible.')">
+            Eliminar todos los registros
+          </button>
+        </form>
+    {% endif %}
+
+</div>
 
 <!-- Modal for Processing -->
 <div id="processingModal" class="w3-modal">

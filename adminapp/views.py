@@ -17,6 +17,10 @@ import traceback
 def adminpanel(req):
     return render(req, "admin_panel.html")
 
+def db_manager(req):
+    return render(req, "db_manager.html")
+
+
 # POPULATE ORDER MODEL Main function to process Excel files and populate Order model
 @login_required
 def process_orders_from_upload(request):
@@ -35,7 +39,7 @@ def process_orders_from_upload(request):
 
             # Ensure the uploaded file is an Excel file
             if not uploaded_file.name.endswith(('.xlsx', '.xls')):
-                raise ValueError('Unsupported file type. Please upload an Excel file.')
+                raise ValueError('Formato de archivo no soportado. Asegurese que esta subiendo un xlsx.')
             excel_file = uploaded_file.read()
             excel_io = BytesIO(excel_file)
             df = pd.read_excel(excel_io)
@@ -52,9 +56,17 @@ def process_orders_from_upload(request):
                         pedido = row.get('pedido')
                         if not pedido:
                             raise ValueError("Missing 'pedido' in row")
+                        
+                        row_json = json.dumps(row.to_dict())
 
                         seller_name = row['seller']
                         company, _ = Company.objects.get_or_create(name=seller_name)
+        
+                        postal_code_xlsx = row.get('codigoPostal')
+                        try:
+                            postal_code_model = PostalCodes.objects.get(cp=postal_code_xlsx)
+                        except PostalCodes.DoesNotExist:
+                            raise ValueError(f"Postal code {postal_code_xlsx} not found in PostalCodes database.")
 
                         # Check if the order with this LPN already exists
                         if row['lpn'] in existing_lpns:
@@ -75,8 +87,8 @@ def process_orders_from_upload(request):
                             order.zona = row['zona']
                             order.trackingDistribucion = row.get('trackingDistribucion', '')
                             order.trackingTransporte = row.get('trackingTransporte', '')
-                            order.codigoPostal = row['codigoPostal']
-                            order.order_data = json.dumps({})  # Set to serialized empty JSON object
+                            order.codigoPostal = postal_code_model
+                            order.order_data = row_json
                             orders_to_update.append(order)
                         else:
                             # Create a new order
@@ -97,8 +109,8 @@ def process_orders_from_upload(request):
                                 zona=row['zona'],
                                 trackingDistribucion=row.get('trackingDistribucion', ''),
                                 trackingTransporte=row.get('trackingTransporte', ''),
-                                codigoPostal=row['codigoPostal'],
-                                order_data=json.dumps({})  # Set to serialized empty JSON object
+                                codigoPostal=postal_code_model,
+                                order_data=row_json
                             ))
                         successful_orders += 1
                     except Exception as e:
@@ -113,7 +125,7 @@ def process_orders_from_upload(request):
                 'localidad', 'zona', 'trackingDistribucion', 'trackingTransporte', 'codigoPostal', 'order_data'
             ], batch_size=batchzise)
 
-            messages.success(request, f"Processing complete: {successful_orders} orders saved, {failed_orders} errors encountered.")
+            messages.success(request, f"Procesamiento completo: {successful_orders} ordenes guardadas, {failed_orders} ordenes fallidas.")
 
         
         except Exception as e:
@@ -129,10 +141,6 @@ def process_orders_from_upload(request):
 
     return render(request, 'db_manager.html')
     
-
-def db_manager(req):
-    return render(req, "db_manager.html")
-
 
 def download_template_xlsx(request):
     # Create a new Excel workbook and sheet for oms submissions
@@ -167,9 +175,9 @@ def delete_all_orders(request):
     if request.method == "POST":
         try:
             Order.objects.all().delete()
-            messages.success(request, "All orders have been successfully deleted.")
+            messages.success(request, "Todas las ordenes fueron eliminadas con exito.")
         except Exception as e:
-            messages.error(request, f"Error occurred while deleting orders: {e}")
+            messages.error(request, f"Ocurrio un eeror durante el proceso: {e}")
     return redirect('db_manager')
 
 
@@ -223,6 +231,7 @@ def upload_postal_codes(request):
                             postal_code.distrito = row['distrito']
                             postal_code.amba_intralog = row['amba_intralog']
                             postal_code.flex = row['flex']
+                            postal_code.dias_limite = row['dias_limite']
                             postal_codes_to_update.append(postal_code)
                         else:
                             # Create a new postal code entry
@@ -234,7 +243,8 @@ def upload_postal_codes(request):
                                 region=row['region'],
                                 distrito=row['distrito'],
                                 amba_intralog=row['amba_intralog'],
-                                flex=row['flex']
+                                flex=row['flex'],
+                                dias_limite=row['dias_limite']
                             ))
                         successful_inserts += 1
                     except Exception as e:
@@ -245,7 +255,7 @@ def upload_postal_codes(request):
             # Bulk create and update postal codes
             PostalCodes.objects.bulk_create(postal_codes_to_create, batch_size=batch_size)
             PostalCodes.objects.bulk_update(postal_codes_to_update, [
-                'localidad', 'partido', 'provincia', 'region', 'distrito', 'amba_intralog', 'flex'
+                'localidad', 'partido', 'provincia', 'region', 'distrito', 'amba_intralog', 'flex', 'dias_limite'
             ], batch_size=batch_size)
 
             messages.success(request, f"Procesamiento completo: {successful_inserts} cps procesados, {failed_inserts} inserciones fallidas.")
@@ -269,7 +279,7 @@ def download_cp_template_xlsx(request):
     # Define the column headers
     headers = [
         "cp", "localidad", "partido", "provincia", "region",
-        "distrito", "amba_intralog", "flex"
+        "distrito", "amba_intralog", "flex", "dias_limite"
     ]
 
     # Add the headers to the first row of the sheet
@@ -284,3 +294,14 @@ def download_cp_template_xlsx(request):
         response = HttpResponse(buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = 'attachment; filename=template_cp.xlsx'
         return response
+    
+
+@staff_member_required
+def delete_all_orders_cp(request):
+    if request.method == "POST":
+        try:
+            PostalCodes.objects.all().delete()
+            messages.success(request, "Todos los registros han sido eliminados correctamente.")
+        except Exception as e:
+            messages.error(request, f"Ocurrio un error en el proceso: {e}")
+    return redirect('db_manager')

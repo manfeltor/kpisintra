@@ -315,20 +315,20 @@ def delete_all_orders_cp(request):
 
 
 @staff_member_required
-def batch_update_tracking_data(request):
+def batch_update_sr_tracking_data(request):
     """
     View to batch update SRTrackingData with empty rawJson fields from an external API.
     """
-    # Configurations
     BATCH_SIZE = 500
     logger = logging.getLogger(__name__)
 
     # Query all records with an empty rawJson field
     records_to_update = SRTrackingData.objects.filter(Q(rawjson__isnull=True) | Q(rawjson=''))
-
     total_records = records_to_update.count()
-    if total_records == 0:
-        return JsonResponse({'status': 'No records to update.'})
+
+    if total_records == 0:        
+        messages.error(request, "No hay trackings para procesar.")
+        return render(request, 'db_manager.html')
 
     # Process in chunks of BATCH_SIZE
     for start in range(0, total_records, BATCH_SIZE):
@@ -345,21 +345,16 @@ def batch_update_tracking_data(request):
                 if api_data:
                     record.rawjson = json.dumps(api_data)
                 else:
-                    logger.warning(f"No data returned for tracking: {record.trackingDistribucion}")
+                    messages.warning(request, f"No data returned for tracking: {record.trackingDistribucion}")
 
             # Use atomic transaction to save each batch safely
             with transaction.atomic():
                 SRTrackingData.objects.bulk_update(batch, ['rawjson'])
 
-            time.sleep(1)  # Rate-limiting delay; adjust based on API constraints
-
         except Exception as e:
-            logger.error(f"Error updating batch starting at {start}: {e}")
+            messages.error(request, f"Error updating batch starting at {start}: {e}")
             for tracking_number in tracking_numbers:
                 logger.warning(f"Failed to update tracking: {tracking_number}")
 
-    return JsonResponse({
-        'status': 'Batch update complete',
-        'updated_records': total_records,
-        'remaining_batches': total_records // BATCH_SIZE - start // BATCH_SIZE
-    })
+    messages.success(request, f"Batch update complete: {total_records} records processed.")
+    return render(request, 'db_manager.html')

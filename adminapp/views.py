@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 import pandas as pd
 from usersapp.models import Company
-from dataapp.models import Order, PostalCodes, SRTrackingData
+from dataapp.models import Order, PostalCodes, SRTrackingData, CATrackingData
 from .populateordermodelhelpers import parse_date
 import json
 from django.contrib.auth.decorators import login_required
@@ -12,6 +12,10 @@ from io import BytesIO
 from django.db import transaction
 from django.contrib import messages
 import traceback
+from dataapp.srapihandler import fetch_sr_tracking_data_from_api
+import logging
+from django.http import JsonResponse
+import time
 
 # Create your views here.
 def adminpanel(req):
@@ -30,10 +34,6 @@ def process_orders_from_upload(request):
         failed_orders = 0
         batchzise = 1000
 
-        # Get the uploaded file (single file)
-        # uploaded_file = request.FILES['excel_file']
-
-        # Read the uploaded file into memory using BytesIO (works for both GCS and local)
         try:
             uploaded_file = request.FILES['oms_excel_file']
 
@@ -64,9 +64,15 @@ def process_orders_from_upload(request):
 
                         if row.get('trackingDistribucion') not in ['', None]:
                             tracking_distribucion = row.get('trackingDistribucion')
-                            tracking_data, created = SRTrackingData.objects.get_or_create(
-                                trackingDistribucion=tracking_distribucion
-                            )
+                            tracking_distribucion_data, created = SRTrackingData.objects.get_or_create(trackingDistribucion=tracking_distribucion)
+                        else:
+                            tracking_transporte_data = None
+
+                        if row.get('trackingTransporte') not in ['', None]:
+                            tracking_transporte = row.get('trackingTransporte')
+                            tracking_transporte_data, created = CATrackingData.objects.get_or_create(trackingTransporte=tracking_transporte)
+                        else:
+                            tracking_transporte_data = None
         
                         postal_code_xlsx = row.get('codigoPostal')
                         try:
@@ -91,8 +97,8 @@ def process_orders_from_upload(request):
                             order.provincia = row['provincia']
                             order.localidad = row['localidad']
                             order.zona = row['zona']
-                            order.trackingDistribucion = tracking_data
-                            order.trackingTransporte = row.get('trackingTransporte', '')
+                            order.trackingDistribucion = tracking_distribucion_data
+                            order.trackingTransporte = tracking_transporte_data
                             order.codigoPostal = postal_code_model
                             order.order_data = row_json
                             orders_to_update.append(order)
@@ -113,8 +119,8 @@ def process_orders_from_upload(request):
                                 provincia=row['provincia'],
                                 localidad=row['localidad'],
                                 zona=row['zona'],
-                                trackingDistribucion=tracking_data,
-                                trackingTransporte=row.get('trackingTransporte', ''),
+                                trackingDistribucion=tracking_distribucion_data,
+                                trackingTransporte=tracking_transporte_data,
                                 codigoPostal=postal_code_model,
                                 order_data=row_json
                             ))
@@ -138,12 +144,7 @@ def process_orders_from_upload(request):
             tb = traceback.format_exc()
             messages.error(request, f"Error reading file: {e} trace: {tb}")
             
-
-        # status_messages.append(f"Processing complete: {successful_orders} orders saved, {failed_orders} errors encountered.")
-        # messages.success(request, f"Processing complete: {successful_orders} orders saved, {failed_orders} errors encountered.")
-
         return render(request, 'db_manager.html')
-        # return JsonResponse({'message': 'File uploaded successfully', 'success': True})
 
     return render(request, 'db_manager.html')
     
@@ -311,3 +312,54 @@ def delete_all_orders_cp(request):
         except Exception as e:
             messages.error(request, f"Ocurrio un error en el proceso: {e}")
     return redirect('db_manager')
+
+
+@staff_member_required
+def batch_update_tracking_data(request):
+    """
+    View to batch update SRTrackingData with empty rawJson fields from an external API.
+    """
+    # Configurations
+    BATCH_SIZE = 500
+    logger = logging.getLogger(__name__)
+
+    # Query all records with an empty rawJson field
+    records_to_update = SRTrackingData.objects.filter(Q(rawjson__isnull=True) | Q(rawjson=''))
+
+    total_records = records_to_update.count()
+    if total_records == 0:
+        return JsonResponse({'status': 'No records to update.'})
+
+    # Process in chunks of BATCH_SIZE
+    for start in range(0, total_records, BATCH_SIZE):
+        batch = records_to_update[start:start + BATCH_SIZE]
+        tracking_numbers = [record.trackingDistribucion for record in batch]
+
+        try:
+            # Fetch tracking data from external API in bulk
+            api_responses = fetch_sr_tracking_data_from_api(tracking_numbers)
+
+            # Prepare updates
+            for record in batch:
+                api_data = api_responses.get(record.trackingDistribucion)
+                if api_data:
+                    record.rawjson = json.dumps(api_data)
+                else:
+                    logger.warning(f"No data returned for tracking: {record.trackingDistribucion}")
+
+            # Use atomic transaction to save each batch safely
+            with transaction.atomic():
+                SRTrackingData.objects.bulk_update(batch, ['rawjson'])
+
+            time.sleep(1)  # Rate-limiting delay; adjust based on API constraints
+
+        except Exception as e:
+            logger.error(f"Error updating batch starting at {start}: {e}")
+            for tracking_number in tracking_numbers:
+                logger.warning(f"Failed to update tracking: {tracking_number}")
+
+    return JsonResponse({
+        'status': 'Batch update complete',
+        'updated_records': total_records,
+        'remaining_batches': total_records // BATCH_SIZE - start // BATCH_SIZE
+    })

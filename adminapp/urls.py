@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import adminpanel, process_orders_from_upload, db_manager, download_template_xlsx, delete_all_orders
-from .views import upload_postal_codes, download_cp_template_xlsx, delete_all_orders_cp
+from .views import upload_postal_codes, download_cp_template_xlsx, delete_all_orders_cp, batch_update_sr_tracking_data
 
 urlpatterns = [
     path('', adminpanel, name="adminpanel"),
@@ -11,4 +11,5 @@ urlpatterns = [
     path('uploadpostal/', upload_postal_codes, name='upload_postal_codes'),
     path('download-cptemplate/', download_cp_template_xlsx, name='download_cp_template_xlsx'),
     path('delete-all-orders-cp/', delete_all_orders_cp, name='delete_all_orders_cp'),
+    path('start_sr_tracking_data_processing/', batch_update_sr_tracking_data, name='batch_update_sr_tracking_data'),
 ]

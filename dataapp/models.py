@@ -6,12 +6,12 @@ from django.core.validators import MaxValueValidator
 
 class SRTrackingData(models.Model):
     trackingDistribucion = models.CharField(max_length=100, unique=True)
-    rawJson = models.JSONField()
+    rawJson = models.JSONField(null=True, blank=True)
     
 
 class CATrackingData(models.Model):
     trackingTransporte = models.CharField(max_length=100, unique=True)
-    rawJson = models.JSONField()
+    rawJson = models.JSONField(null=True, blank=True)
     
 
 class PostalCodes(models.Model):

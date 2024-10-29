@@ -16,6 +16,7 @@ from dataapp.srapihandler import fetch_sr_tracking_data_from_api
 import logging
 from django.http import JsonResponse
 import time
+from django.db.models import Q
 
 # Create your views here.
 def adminpanel(req):
@@ -128,6 +129,7 @@ def process_orders_from_upload(request):
                     except Exception as e:
                         failed_orders += 1
                         status_messages.append(f"Error processing row: {e}")
+                        print(f"Error processing row: {e}")
 
             # Bulk create and update orders
             Order.objects.bulk_create(orders_to_create, batch_size=batchzise)
@@ -317,44 +319,46 @@ def delete_all_orders_cp(request):
 @staff_member_required
 def batch_update_sr_tracking_data(request):
     """
-    View to batch update SRTrackingData with empty rawJson fields from an external API.
+    AJAX view to batch update SRTrackingData with empty rawJson fields from an external API.
     """
-    BATCH_SIZE = 500
-    logger = logging.getLogger(__name__)
+    if request.method == 'POST':
+        BATCH_SIZE = 500
+        logger = logging.getLogger(__name__)
+        records_to_update = SRTrackingData.objects.filter(Q(rawJson__isnull=True) | Q(rawJson=''))
+        total_records = records_to_update.count()
 
-    # Query all records with an empty rawJson field
-    records_to_update = SRTrackingData.objects.filter(Q(rawjson__isnull=True) | Q(rawjson=''))
-    total_records = records_to_update.count()
+        if total_records == 0:
+            return JsonResponse({'status': 'complete', 'message': "No hay trackings para procesar."})
 
-    if total_records == 0:        
-        messages.error(request, "No hay trackings para procesar.")
-        return render(request, 'db_manager.html')
+        # Process in chunks of BATCH_SIZE
+        for start in range(0, total_records, BATCH_SIZE):
+            batch = records_to_update[start:start + BATCH_SIZE]
+            tracking_numbers = [record.trackingDistribucion for record in batch]
+            try:
+                api_responses = fetch_sr_tracking_data_from_api(tracking_numbers)
+                for record in batch:
+                    api_data = api_responses.get(record.trackingDistribucion)
+                    if api_data:
+                        record.rawJson = json.dumps(api_data)
 
-    # Process in chunks of BATCH_SIZE
-    for start in range(0, total_records, BATCH_SIZE):
-        batch = records_to_update[start:start + BATCH_SIZE]
-        tracking_numbers = [record.trackingDistribucion for record in batch]
+                with transaction.atomic():
+                    SRTrackingData.objects.bulk_update(batch, ['rawJson'])
 
-        try:
-            # Fetch tracking data from external API in bulk
-            api_responses = fetch_sr_tracking_data_from_api(tracking_numbers)
+                time.sleep(0.2)
+                # Send progress feedback to AJAX
+                return JsonResponse({
+                    'status': 'processing',
+                    'message': f"Procesado batch desde {start} hasta {start + BATCH_SIZE}.",
+                    'total_records': total_records
+                })
 
-            # Prepare updates
-            for record in batch:
-                api_data = api_responses.get(record.trackingDistribucion)
-                if api_data:
-                    record.rawjson = json.dumps(api_data)
-                else:
-                    messages.warning(request, f"No data returned for tracking: {record.trackingDistribucion}")
+            except Exception as e:
+                logger.error(f"Error updating batch starting at {start}: {e}")
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f"Error al procesar el batch desde {start}."
+                })
 
-            # Use atomic transaction to save each batch safely
-            with transaction.atomic():
-                SRTrackingData.objects.bulk_update(batch, ['rawjson'])
-
-        except Exception as e:
-            messages.error(request, f"Error updating batch starting at {start}: {e}")
-            for tracking_number in tracking_numbers:
-                logger.warning(f"Failed to update tracking: {tracking_number}")
-
-    messages.success(request, f"Batch update complete: {total_records} records processed.")
-    return render(request, 'db_manager.html')
+        return JsonResponse({'status': 'complete', 'message': "Procesamiento completo de SR tracking data."})
+    else:
+        return JsonResponse({'status': 'error', 'message': "Método no permitido."}, status=405)

@@ -60,7 +60,7 @@
     </ul>
 
     <!-- Upload Form oms -->
-    <form id="uploadForm" method="POST" enctype="multipart/form-data" action="{% url 'upload_oms_data' %}">
+    <form id="uploadFormOms" method="POST" enctype="multipart/form-data" action="{% url 'upload_oms_data' %}">
       {% csrf_token %}
       <input type="file" name="oms_excel_file" id="oms_excel_file" required>
       <button type="submit" class="w3-button w3-blue w3-margin-top" onclick="return checkFileAndSubmitOms()">Subir data</button>
@@ -106,7 +106,7 @@
   </ul>
   </p>
   <!-- Upload Form postalcode -->
-  <form id="uploadForm" method="POST" enctype="multipart/form-data" action="{% url 'upload_postal_codes' %}">
+  <form id="uploadFormCp" method="POST" enctype="multipart/form-data" action="{% url 'upload_postal_codes' %}">
     {% csrf_token %}
     <input type="file" name="cp_excel_file" id="cp_excel_file" required>
     <button type="submit" class="w3-button w3-blue w3-margin-top" onclick="return checkFileAndSubmitCp()">Subir data</button>
@@ -129,6 +129,20 @@
           </button>
         </form>
     {% endif %}
+
+    <h1 class="w3-jumbo"><b>SR tracking data</b></h1>
+
+    <div class="w3-container" id="srapi" style="margin-top:10px">
+      <h1 class="w3-xxxlarge w3-text-red"><b>Poblador de base trackings SR</b></h1>
+      <hr style="width:50px;border:5px solid #f33d30" class="w3-round">
+      <p>Carga la data de los trackings en la base de ordenes a través de la API de SR</p>
+      <p>Esta función consulta sobre los tracking cargados en la base de OMS. Asegúrese de que en esta base hay registros correctos.</p>
+      <!-- Django Copilot Button Implementation -->
+      <button id="startSRTrackingDataProcess" class="w3-button w3-green">Iniciar procesamiento de trackings SR</button>
+      <div id="processingFeedback" class="w3-panel w3-border w3-padding-small w3-margin-top" style="display: none;">
+          <p id="feedbackMessage">Iniciando procesamiento...</p>
+      </div>
+  </div>
 
 </div>
 
@@ -213,6 +227,35 @@
       showProcessingModal();
       return true;  // Allow form submission
     }
+</script>
+<script>
+  document.getElementById('startSRTrackingDataProcess').addEventListener('click', function () {
+      const feedbackPanel = document.getElementById('processingFeedback');
+      feedbackPanel.style.display = 'block';
+      const feedbackMessage = document.getElementById('feedbackMessage');
+
+      // Send AJAX request to start SR Tracking Data processing
+      fetch("{% url 'batch_update_sr_tracking_data' %}", {
+          method: "POST",
+          headers: {
+              "X-CSRFToken": "{{ csrf_token }}",
+              "Content-Type": "application/json"
+          }
+      })
+      .then(response => response.json())
+      .then(data => {
+          feedbackMessage.innerText = data.message;
+          if (data.status === 'complete') {
+              feedbackPanel.classList.replace('w3-border', 'w3-green');
+          } else if (data.status === 'error') {
+              feedbackPanel.classList.replace('w3-border', 'w3-red');
+          }
+      })
+      .catch(error => {
+          feedbackMessage.innerText = "Error durante el procesamiento.";
+          feedbackPanel.classList.replace('w3-border', 'w3-red');
+      });
+  });
 </script>
 
 

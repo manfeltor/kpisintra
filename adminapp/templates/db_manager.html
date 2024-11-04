@@ -146,6 +146,18 @@
     </div>
   </div>
 
+  <h1 class="w3-xxxlarge w3-text-red" style="margin-top:50px"><b>Limpiador de base data trk SR</b></h1>
+  <hr style="width:50px;border:5px solid #f33d30" class="w3-round">
+      <p>USAR A DISCRECION!!!! Este boton elimina TODOS los registros de la base de datos de trackings de SR y sus asociados en OMS</p>  
+      {% if request.user.is_staff %}
+        <form method="POST" action="{% url 'delete_all_orders_sr' %}" onsubmit="showDeletingModal()">
+          {% csrf_token %}
+          <button type="submit" class="w3-button w3-red w3-margin-top" 
+            onclick="return confirm('Esta seguro de querer realizar esta transaccion? una vez realizada es irreversible.')">
+            Eliminar todos los registros
+          </button>
+      {% endif %}
+
 <!-- Processing Modal -->
 <div id="processingModal" class="w3-modal">
   <div class="w3-modal-content w3-card-4 w3-animate-top">

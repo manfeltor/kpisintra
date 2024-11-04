@@ -365,3 +365,13 @@ def batch_update_sr_tracking_data(request):
 
     # Redirect back to the page to display feedback
     return redirect('db_manager')
+
+@staff_member_required
+def delete_all_srtrk_records(request):
+    if request.method == "POST":
+        try:
+            SRTrackingData.objects.all().delete()
+            messages.success(request, "Todos los registros fueron eliminadas con exito.")
+        except Exception as e:
+            messages.error(request, f"Ocurrio un eeror durante el proceso: {e}")
+    return redirect('db_manager')

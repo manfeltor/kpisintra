@@ -75,7 +75,8 @@ def process_orders_from_upload(request):
                         else:
                             tracking_transporte_data = None
         
-                        postal_code_xlsx = row.get('codigoPostal')
+                        postal_code_xlsx = str(int(row.get('codigoPostal')))
+                        
                         try:
                             postal_code_model = PostalCodes.objects.get(cp=postal_code_xlsx)
                         except PostalCodes.DoesNotExist:

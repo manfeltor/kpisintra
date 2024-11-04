@@ -20,12 +20,13 @@ def fetch_sr_tracking_data_from_api(batch):
         while not success and retries < 3:
             try:
                 response = requests.get(url, headers=headers)
+                print(response.status_code, 'for', trk)
                 
                 if response.status_code == 200:
                     data = response.json()  # Directly store JSON response
                     tracking_data[trk] = data
                     success = True
-                    time.sleep(0.2)  # Success delay
+                    time.sleep(0.1)  # Success delay
 
                 else:
                     retries += 1

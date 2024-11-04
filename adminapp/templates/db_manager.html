@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% csrf_token %}
 
 {% block sidebar %}
 <!-- Sidebar/menu -->
@@ -87,7 +88,7 @@
 
 <h1 class="w3-jumbo"><b>CODIGOS POSTALES</b></h1>
 
-<div class="w3-container" id="services" style="margin-top:10px">
+<div class="w3-container" id="services" style="margin-top:10px;margin-bottom:100px">
   <h1 class="w3-xxxlarge w3-text-red"><b>Poblador de Códigos Postales</b></h1>
   <hr style="width:50px;border:5px solid #f33d30" class="w3-round">
   <p>Levanta el archivo de Códigos Postales en la base de datos principal</p>
@@ -130,30 +131,29 @@
         </form>
     {% endif %}
 
-    <h1 class="w3-jumbo"><b>SR tracking data</b></h1>
+  </div>
+  <h1 class="w3-jumbo"><b>SR tracking data</b></h1>
 
-    <div class="w3-container" id="srapi" style="margin-top:10px">
-      <h1 class="w3-xxxlarge w3-text-red"><b>Poblador de base trackings SR</b></h1>
-      <hr style="width:50px;border:5px solid #f33d30" class="w3-round">
-      <p>Carga la data de los trackings en la base de ordenes a través de la API de SR</p>
-      <p>Esta función consulta sobre los tracking cargados en la base de OMS. Asegúrese de que en esta base hay registros correctos.</p>
-      <!-- Django Copilot Button Implementation -->
-      <button id="startSRTrackingDataProcess" class="w3-button w3-green">Iniciar procesamiento de trackings SR</button>
-      <div id="processingFeedback" class="w3-panel w3-border w3-padding-small w3-margin-top" style="display: none;">
-          <p id="feedbackMessage">Iniciando procesamiento...</p>
-      </div>
+  <div class="w3-container" id="srapi" style="margin-top:10px">
+    <h1 class="w3-xxxlarge w3-text-red"><b>Poblador de base trackings SR</b></h1>
+    <hr style="width:50px;border:5px solid #f33d30" class="w3-round">
+    <p>Carga la data de los trackings en la base de ordenes a través de la API de SR</p>
+    <p>Esta función consulta sobre los tracking cargados en la base de OMS. Asegúrese de que en esta base hay registros correctos.</p>
+    <!-- Django Copilot Button Implementation -->
+    <button id="startSRTrackingDataProcess" class="w3-button w3-green" onclick="showProcessingModal(); startSrTrackingProcess()">Iniciar procesamiento de trackings SR</button>
+    <div id="processingFeedback" class="w3-panel w3-border w3-padding-small w3-margin-top" style="display: none;">
+        <p id="feedbackMessage">Iniciando procesamiento...</p>
+    </div>
   </div>
 
-</div>
-
-<!-- Modal for Processing -->
+<!-- Processing Modal -->
 <div id="processingModal" class="w3-modal">
   <div class="w3-modal-content w3-card-4 w3-animate-top">
-      <div class="w3-container">
-          <span class="w3-button w3-xlarge w3-hover-red w3-display-topright">&times;</span>
-          <h3>Processing...</h3>
-          <p>Please wait while the file is being processed.</p>
-      </div>
+    <div class="w3-container">
+      <span onclick="closeProcessingModal()" class="w3-button w3-xlarge w3-hover-red w3-display-topright">&times;</span>
+      <h3>Procesando...</h3>
+      <p>Espere mientras procesamos los datos. Esto puede tardar unos minutos.</p>
+    </div>
   </div>
 </div>
 
@@ -162,14 +162,14 @@
   <div class="w3-modal-content w3-card-4 w3-animate-top">
       <div class="w3-container">
           <span class="w3-button w3-xlarge w3-hover-red w3-display-topright" onclick="document.getElementById('deletingModal').style.display='none'">&times;</span>
-          <h3>Deleting data...</h3>
-          <p>Please wait while the data is being deleted. This may take a few moments.</p>
+          <h3>Borrando data...</h3>
+          <p>Por favor espera mientras se procesa la solicitud. esto puede tardar algunos minutos.</p>
       </div>
   </div>
 </div>
 
 <!-- Modal for Showing Success or Error -->
-{% if messages %}
+<!-- {% if messages %}
 <div id="feedbackModal" class="w3-modal" style="display: block;">
   <div class="w3-modal-content w3-card-4 w3-animate-top">
       <div class="w3-container">
@@ -186,6 +186,26 @@
       </div>
   </div>
 </div>
+{% endif %} -->
+
+<!-- Feedback Modal (Success/Error) -->
+{% if messages %}
+<div id="feedbackModal" class="w3-modal" style="display: block;">
+  <div class="w3-modal-content w3-card-4 w3-animate-top">
+    <div class="w3-container">
+      <span onclick="document.getElementById('feedbackModal').style.display='none'" class="w3-button w3-xlarge w3-hover-red w3-display-topright">&times;</span>
+      {% for message in messages %}
+        {% if message.tags == 'success' %}
+          <h3 class="w3-text-green">Éxito</h3>
+          <p>{{ message }}</p>
+        {% else %}
+          <h3 class="w3-text-red">Error</h3>
+          <p>{{ message }}</p>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
 {% endif %}
 
 <script>
@@ -196,8 +216,17 @@
         }
     }
 
+    function closeProcessingModal() {
+        document.getElementById('processingModal').style.display = 'none';
+    }
+
     function showDeletingModal() {
         document.getElementById('deletingModal').style.display = 'block';
+    }
+
+    function startSrTrackingProcess() {
+        // Redirect to the URL that triggers the SR tracking data process
+        window.location.href = "{% url 'batch_update_sr_tracking_data' %}";
     }
 
     function checkFileAndSubmitOms() {
@@ -227,8 +256,9 @@
       showProcessingModal();
       return true;  // Allow form submission
     }
+
 </script>
-<script>
+<!-- <script>
   document.getElementById('startSRTrackingDataProcess').addEventListener('click', function () {
       const feedbackPanel = document.getElementById('processingFeedback');
       feedbackPanel.style.display = 'block';
@@ -256,7 +286,6 @@
           feedbackPanel.classList.replace('w3-border', 'w3-red');
       });
   });
-</script>
-
+</script> -->
 
 {% endblock %}

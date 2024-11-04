@@ -11,5 +11,5 @@ urlpatterns = [
     path('uploadpostal/', upload_postal_codes, name='upload_postal_codes'),
     path('download-cptemplate/', download_cp_template_xlsx, name='download_cp_template_xlsx'),
     path('delete-all-orders-cp/', delete_all_orders_cp, name='delete_all_orders_cp'),
-    path('start_sr_tracking_data_processing/', batch_update_sr_tracking_data, name='batch_update_sr_tracking_data'),
+    path('trkpop/', batch_update_sr_tracking_data, name='batch_update_sr_tracking_data'),
 ]

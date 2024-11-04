@@ -319,46 +319,49 @@ def delete_all_orders_cp(request):
 @staff_member_required
 def batch_update_sr_tracking_data(request):
     """
-    AJAX view to batch update SRTrackingData with empty rawJson fields from an external API.
+    View to batch update SRTrackingData with empty rawJson fields from an external API.
     """
-    if request.method == 'POST':
-        BATCH_SIZE = 500
-        logger = logging.getLogger(__name__)
-        records_to_update = SRTrackingData.objects.filter(Q(rawJson__isnull=True) | Q(rawJson=''))
-        total_records = records_to_update.count()
+    logger = logging.getLogger(__name__)
+    BATCH_SIZE = 200
 
-        if total_records == 0:
-            return JsonResponse({'status': 'complete', 'message': "No hay trackings para procesar."})
+    # Query all records with an empty rawJson field
+    records_to_update = SRTrackingData.objects.filter(rawJson__isnull=True)
+    total_records = records_to_update.count()
+    print('inicializado SRpopulate con: ', total_records, 'registros a actualizar')
 
+    if total_records == 0:
+        messages.error(request, "No hay trackings para procesar")
+        return redirect('db_manager')  # Go back to db_manager page
+
+    try:
         # Process in chunks of BATCH_SIZE
         for start in range(0, total_records, BATCH_SIZE):
             batch = records_to_update[start:start + BATCH_SIZE]
             tracking_numbers = [record.trackingDistribucion for record in batch]
-            try:
-                api_responses = fetch_sr_tracking_data_from_api(tracking_numbers)
-                for record in batch:
-                    api_data = api_responses.get(record.trackingDistribucion)
-                    if api_data:
-                        record.rawJson = json.dumps(api_data)
+            print('batch inicializada')
 
-                with transaction.atomic():
-                    SRTrackingData.objects.bulk_update(batch, ['rawJson'])
+            # Fetch tracking data from API
+            api_responses = fetch_sr_tracking_data_from_api(tracking_numbers)
 
-                time.sleep(0.2)
-                # Send progress feedback to AJAX
-                return JsonResponse({
-                    'status': 'processing',
-                    'message': f"Procesado batch desde {start} hasta {start + BATCH_SIZE}.",
-                    'total_records': total_records
-                })
+            # Update records
+            for record in batch:
+                api_data = api_responses.get(record.trackingDistribucion)
+                if api_data:
+                    record.rawJson = api_data
+                else:
+                    logger.warning(f"No retorno data para: {record.trackingDistribucion}")
 
-            except Exception as e:
-                logger.error(f"Error updating batch starting at {start}: {e}")
-                return JsonResponse({
-                    'status': 'error',
-                    'message': f"Error al procesar el batch desde {start}."
-                })
+            # Save updates in bulk
+            with transaction.atomic():
+                SRTrackingData.objects.bulk_update(batch, ['rawJson'])
+                print('batch procesada')
 
-        return JsonResponse({'status': 'complete', 'message': "Procesamiento completo de SR tracking data."})
-    else:
-        return JsonResponse({'status': 'error', 'message': "Método no permitido."}, status=405)
+            time.sleep(0.2)  # Rate-limiting delay
+
+        messages.success(request, "Proceso de actualización completado correctamente.")
+    except Exception as e:
+        logger.error(f"Error en el proceso de actualización: {e}")
+        messages.error(request, f"Error durante el procesamiento: {e}")
+
+    # Redirect back to the page to display feedback
+    return redirect('db_manager')

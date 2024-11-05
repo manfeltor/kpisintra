@@ -3,6 +3,47 @@ from usersapp.models import Company
 import json
 from django.core.validators import MaxValueValidator
 
+SR_rawJson_keys = [
+    "id", "load", "tags", "fleet", "notes", "order", "route", "title", "driver",
+    "load_2", "load_3", "seller", "status", "address", "created", "vehicle",
+    "duration", "latitude", "modified", "pictures", "priority", "has_alert",
+    "longitude", "reference", "signature", "on_its_way", "visit_type",
+    "window_end", "current_eta", "eta_current", "tracking_id", "checkin_time",
+    "contact_name", "planned_date", "window_end_2", "window_start",
+    "checkout_time", "contact_email", "contact_phone", "eta_predicted",
+    "geocode_alert", "priority_level", "window_start_2", "programmed_date",
+    "skills_optional", "skills_required", "checkout_comment", "checkout_latitude",
+    "checkout_longitude", "extra_field_values", "checkout_observation",
+    "estimated_time_arrival", "estimated_time_departure", "route_estimated_time_start"
+]
+
+sr_checkout_observations_values_matrix = [
+    {"id": "1068d8b8-f939-46f7-8819-6ab130329ce9", "type": "failed", "label": "fueraDeRutaAsignada"},
+    {"id": "b068cd31-74c3-4f36-b60a-5f0a7b8837dd", "type": "completed", "label": "Entregado"},
+    {"id": "e1b34560-430b-450d-a4df-55066d09172d", "type": "completed", "label": "colectado"},
+    {"id": "90fce0c5-4271-40f3-9f4f-71a6e3ee6e23", "type": "failed", "label": "ausente"},
+    {"id": "c689bc80-a295-458e-a858-1251afc1925c", "type": "completed", "label": "devolucionCliente"},
+    {"id": "1190098c-5ae2-467f-9ff8-ab839ac0555a", "type": "failed", "label": "domicilioIncorrecto"},
+    {"id": "4ae3ce34-2dc2-4a23-935b-93a7b0001875", "type": "failed", "label": "cancelado"},
+    {"id": "9e4619d2-240f-4efb-bc73-f91e9469cd91", "type": "failed", "label": "mercaderiaNoDespachada"},
+    {"id": "d608375c-23cd-4ea3-bce8-25bfacc74ede", "type": "failed", "label": "zonaPeligrosa"},
+    {"id": "b77cf748-cd66-4c33-bdac-4b2ab0534b2b", "type": "failed", "label": "rechazado"},
+    {"id": "1a10310b-e710-4d66-8153-44ca9a88a8dc", "type": "failed", "label": "noColectado"},
+    {"id": "853eaa3c-c265-4c4d-96ef-95fe580114fe", "type": "failed", "label": "demorasOperativas"}
+]
+
+sr_failed_checkout_observations_label_responsability_desambiguation_matrix = [
+    {"fueraDeRutaAsignada": "transporte"},
+    {"Ausente": "cliente"},
+    {"domicilioIncorrecto": "cliente"},
+    {"cancelado": "cliente"},
+    {"mercaderiaNoDespachada": "transporte"},
+    {"zonaPeligrosa": "cliente"},
+    {"rechazado": "cliente"},
+    {"noColectado": "transporte"},
+    {"demorasOperativas": "transporte"},
+]
+
 
 class SRTrackingData(models.Model):
     trackingDistribucion = models.CharField(max_length=100, unique=True)

@@ -14,9 +14,7 @@ from django.contrib import messages
 import traceback
 from dataapp.srapihandler import fetch_sr_tracking_data_from_api
 import logging
-from django.http import JsonResponse
 import time
-from django.db.models import Q
 
 # Create your views here.
 def adminpanel(req):

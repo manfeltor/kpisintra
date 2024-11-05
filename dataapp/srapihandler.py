@@ -34,7 +34,7 @@ def fetch_single_tracking_data(trk):
     print(f"Failed to fetch data for tracking_id {trk} after {retries} retries.")
     return trk, None
 
-def fetch_sr_tracking_data_from_api(batch, max_workers=5):
+def fetch_sr_tracking_data_from_api(batch, max_workers=7):
     tracking_data = {}
     
     # Using ThreadPoolExecutor to parallelize requests

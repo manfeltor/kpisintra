@@ -21,7 +21,7 @@
     {% if request.user.is_authenticated %}
       {% if request.user.is_management or request.user.is_superuser %}
         <a href="{% url 'list_users' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Listar/eliminar usuarios</a>
-        <a href="#" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Modificar compañias</a>
+        <a href="{% url 'list_companies' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Modificar compañias</a>
         <a href="{% url 'adminpanel' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: #f33d30;">Admin Panel</a>
       {% endif %}
     {% endif %}

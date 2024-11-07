@@ -1,10 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
-from .forms import CustomUserCreationForm
+from .forms import CustomUserCreationForm, CompanyForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
-from .models import CustomUser
+from .models import CustomUser, Company
 
 
 def login_view(request):
@@ -53,3 +53,28 @@ def delete_user(request, user_id):
         return redirect('list_users')
 
     return render(request, 'delete_user_confirmation.html', {'user': user})
+
+
+@login_required
+def companies_list_view(request):
+    companies = Company.objects.all()  # Retrieve all users
+    return render(request, 'list_companies.html', {'companies': companies})
+
+
+@login_required
+def modify_company_view(request, company_id):
+    company = get_object_or_404(Company, id=company_id)
+    
+    if not (request.user.is_management or request.user.is_superuser):
+        return redirect('unauthorized')  # Redirect to unauthorized page if needed
+
+    if request.method == 'POST':
+        form = CompanyForm(request.POST, instance=company)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Compañia '{company.name}' modificada correctamente.")
+            return redirect('list_companies')
+    else:
+        form = CompanyForm(instance=company)
+    
+    return render(request, 'modify_company.html', {'form': form, 'company': company})

@@ -19,7 +19,7 @@
     {% if request.user.is_authenticated %}
       {% if request.user.is_management or request.user.is_superuser %}
         <a href="{% url 'create_user' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Crear usuarios</a>
-        <a href="{% url 'list_companies' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Modificar compañias</a>
+        <a href="{% url 'list_users' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Listar/eliminar usuarios</a>
         <a href="{% url 'adminpanel' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: #f33d30;">Admin Panel</a>
         
       {% endif %}
@@ -30,40 +30,33 @@
 {% endblock %}
 {% block main_page %}
 <div class="w3-main" style="margin-left:30px;margin-top:43px;">
-    <h2 class="w3-xxxlarge w3-text-red">Listado de usuarios</h2>
+    <h2 class="w3-xxxlarge w3-text-red">Listado de compañias</h2>
     <table class="w3-table w3-bordered w3-striped w3-hoverable">
         <thead>
             <tr class="w3-light-grey">
                 <th>ID</th>
-                <th>Nombre de usuario</th>
-                <th>Email</th>
-                <th>Nombre</th>
-                <th>Apellido</th>
-                <th>Rol</th>
+                <th>Razon social</th>
+                <th>Omni</th>
+                <th>Interior</th>
+                <th>WH</th>
                 {% if request.user.is_management %}
                 <th>Acciones</th>
                 {% endif %}
             </tr>
         </thead>
         <tbody>
-            {% for user in users %}
+            {% for comp in companies %}
             <tr>
-                <td>{{ user.id }}</td>
-                <td>{{ user.username }}</td>
-                <td>{{ user.email }}</td>
-                <td>{{ user.first_name }}</td>
-                <td>{{ user.last_name }}</td>
-                <td>{{ user.role }}</td>
-                {% if request.user.is_staff %}
+                <td>{{ comp.id }}</td>
+                <td>{{ comp.name }}</td>
+                <td>{{ comp.omni }}</td>
+                <td>{{ comp.interior }}</td>
+                <td>{{ comp.wh }}</td>
                 <td>
-                    {% if user.is_staff %}
-                        <a href="#" class="w3-button w3-red">sysAdmin</a>
-                    {% else %}
-                        <a href="{% url 'delete_user' user.id %}" class="w3-button w3-red">Eliminar</a>
-                    {% endif %}
-                </td>
+                {% if request.user.is_management or request.user.is_superuser %}
+                  <a href="{% url 'modify_company' comp.id %}" class="w3-button w3-blue">Modificar</a>
                 {% endif %}
-                
+                </td>                
             </tr>
             {% endfor %}
         </tbody>

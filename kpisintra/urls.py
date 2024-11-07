@@ -22,4 +22,5 @@ urlpatterns = [
     path('', include('landingapp.urls'), name='landing'),
     path('usersapp/', include('usersapp.urls'), name='users'),
     path('adminapp/', include('adminapp.urls'), name='adminapp'),
+    path('metrics/', include('dataapp.urls'), name='metrics'),
 ]

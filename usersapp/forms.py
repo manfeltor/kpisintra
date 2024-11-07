@@ -112,3 +112,9 @@ class UserEditForm(forms.ModelForm):
     class Meta:
         model = CustomUser
         fields = ['role']
+
+
+class CompanyForm(forms.ModelForm):
+    class Meta:
+        model = Company
+        fields = ['omni', 'interior', 'wh']

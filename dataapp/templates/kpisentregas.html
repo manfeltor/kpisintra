@@ -18,33 +18,32 @@
   <div class="w3-bar-block">
     <a href="{% url 'home' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;margin-top:30px;">Home</a>
     {% if request.user.is_authenticated %}
+        <a href="#" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Metricas WareHousing</a>
+
       {% if request.user.is_management or request.user.is_superuser %}
-        <a href="{% url 'list_users' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Listar/eliminar usuarios</a>
-        <a href="{% url 'list_companies' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Modificar compañias</a>
-        <a href="{% url 'adminpanel' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: #f33d30;">Admin Panel</a>
+      <a href="{% url 'adminpanel' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: #f33d30;">Admin Panel</a>
       {% endif %}
-      {% if request.user.is_superuser %}
-      {% endif %}
+      
     {% endif %}
   </div>
 {% endblock %}
 
 {% block main_page %}
-<div class="w3-main" style="margin-left:20px;margin-top:43px;">
-    <div class="w3-container w3-card-4 w3-margin">
-        <h2 class="w3-xxxlarge w3-text-red">Crear nuevo usuario</h2>
-        <form method="post">
-            {% csrf_token %}
-            {{ form.as_p }}
-        <ul>
-            <li>La contraseña no puede ser muy similar a tu informacion personal</li>
-            <li>La contraseña debe contener almenos 8 caracteres</li>
-            <li>La contraseña no puede ser una contraseña sencilla o comun</li>
-            <li>La contraseña no puede ser enteramente numerica</li>
-        </ul>
-            <button type="submit" class="w3-button" style="background-color: #234154;color: antiquewhite;">Crear usuario</button>
-            <a href="{% url 'list_users' %}" class="w3-button w3-red">Cancelar</a>
-        </form>
-    </div>
+<div class="w3-container" style="margin-top:50px" id="showcase">
+        <h1 class="w3-jumbo"><b>Panel de metricas de entregas INTRALOG</b></h1>
+
+    <div class="w3-container" id="services" style="margin-top:30px">
+    <hr style="width:50px;border:5px solid #000000" class="w3-round">
+    <p>Bienvenido al panel principal de KPIs para las operaciones de entregas</p>
+    <p>
+      Seleccione alguna de las siguientes opciones de visualizacion
+    </p>
+</div>
+
+<div class="w3-container" id="services" style="margin-top:70px; margin-bottom: 100px;">
+    <h1 class="w3-xxxlarge w3-text-red"><b>Entregas AMBA</b></h1>
+    <hr style="width:50px;border:5px solid #f33d30" class="w3-round">
+    <p>here would the description go (in spanish please)...</p>
+    <a href="{% url 'entregas_amba' %}" class="w3-button w3-blue w3-margin-top" >ir a Entregas AMBA</a>    
 </div>
 {% endblock %}

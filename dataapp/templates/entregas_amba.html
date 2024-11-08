@@ -31,15 +31,16 @@
 
 {% block main_page %}
 <div class="w3-container" style="margin-top:50px" id="showcase">
-        <h1 class="w3-jumbo"><b>Panel de metricas de entregas AMBA INTRALOG</b></h1>
-
+    <h1 class="w3-jumbo"><b>Panel de métricas de entregas AMBA INTRALOG</b></h1>
     <div class="w3-container" id="services" style="margin-top:30px">
-    <hr style="width:50px;border:5px solid #000000" class="w3-round">
-    <p>Bienvenido al panel de KPIs para las operaciones de entregas AMBA</p>
-    <p>
-      Vista general:
-    </p>
+        <hr style="width:50px;border:5px solid #000000" class="w3-round">
+        <p>Bienvenido al panel de KPIs para las operaciones de entregas AMBA</p>
+        <p>Vista general:</p>
+    </div>
+
+    <!-- Add horizontal scrollbar -->
+    <div style="overflow-x: auto; margin-top: 20px;">
+        {{ table | safe }}
+    </div>
 </div>
-
-
 {% endblock %}

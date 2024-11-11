@@ -46,8 +46,16 @@ sr_failed_checkout_observations_label_responsability_desambiguation_matrix = [
 
 
 class SRTrackingData(models.Model):
-    trackingDistribucion = models.CharField(max_length=100, unique=True)
+    tracking_id = models.CharField(max_length=100, unique=True)
     rawJson = models.JSONField(null=True, blank=True)
+    status = models.CharField(max_length=25)
+    title = models.CharField(max_length=200)
+    tipo = models.CharField(max_length=25, blank=True, null=True)
+    pedido = models.CharField(max_length=25, blank=True, null=True)
+    seller = models.CharField(max_length=25, blank=True, null=True)
+    reference = models.CharField(max_length=50)
+    checkout_observation= models.CharField(max_length=50)
+    planned_date = models.DateField()
     
 
 class CATrackingData(models.Model):
@@ -78,6 +86,7 @@ class Order(models.Model):
     estadoPedido = models.CharField(max_length=50)
     fechaCreacion = models.DateTimeField()
     fechaRecepcion = models.DateTimeField(blank=True, null=True)
+    tipo = models.CharField(max_length=50)
     fechaDespacho = models.DateTimeField(blank=True, null=True)
     fechaEntrega = models.DateTimeField(blank=True, null=True)
     lpn = models.CharField(max_length=100, unique=True)
@@ -85,8 +94,8 @@ class Order(models.Model):
     provincia = models.CharField(max_length=100)
     localidad = models.CharField(max_length=100)
     zona = models.CharField(max_length=100)
-    # trackingDistribucion = models.CharField(max_length=100, blank=True, null=True)
-    trackingDistribucion = models.ForeignKey(SRTrackingData, on_delete=models.CASCADE, related_name="tracking_distribucion", null=True, blank=True)
+    trackingDistribucion = models.CharField(max_length=100, blank=True, null=True)
+    # trackingDistribucion = models.ForeignKey(SRTrackingData, on_delete=models.CASCADE, related_name="tracking_distribucion", null=True, blank=True)
     trackingTransporte = models.ForeignKey(CATrackingData, on_delete=models.CASCADE, related_name="tracking_transporte", null=True, blank=True)
     # trackingTransporte = models.CharField(max_length=100, blank=True, null=True)
     codigoPostaltxt = models.CharField(max_length=10)

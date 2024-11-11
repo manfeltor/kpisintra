@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 import pandas as pd
 from usersapp.models import Company
 from dataapp.models import Order, PostalCodes, SRTrackingData, CATrackingData
-from .populateordermodelhelpers import parse_date
+from ..dataapp.populateordermodelhelpers import parse_date
 import json
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
@@ -12,9 +12,10 @@ from io import BytesIO
 from django.db import transaction
 from django.contrib import messages
 import traceback
-from dataapp.srapihandler import fetch_sr_tracking_data_from_api
 import logging
-import time
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Create your views here.
 def adminpanel(req):
@@ -316,61 +317,13 @@ def delete_all_orders_cp(request):
 
 
 @staff_member_required
-def batch_update_sr_tracking_data(request):
-    """
-    View to batch update SRTrackingData with empty rawJson fields from an external API.
-    """
-    logger = logging.getLogger(__name__)
-    BATCH_SIZE = 200
+def run_SR_api_ingestion_and_log_errors(request):
+    # Run the processing function
+    process_tracking_data()
 
-    # Query all records with an empty rawJson field
-    records_to_update = SRTrackingData.objects.filter(rawJson__isnull=True)
-    total_records = records_to_update.count()
-    print('inicializado SRpopulate con: ', total_records, 'registros a actualizar')
+    # Collect any errors from the logger and add to Django messages
+    for record in logger.handlers[0].buffer:
+        messages.error(request, record.getMessage())
 
-    if total_records == 0:
-        messages.error(request, "No hay trackings para procesar")
-        return redirect('db_manager')  # Go back to db_manager page
-
-    try:
-        # Process in chunks of BATCH_SIZE
-        for start in range(0, total_records, BATCH_SIZE):
-            batch = records_to_update[start:start + BATCH_SIZE]
-            tracking_numbers = [record.trackingDistribucion for record in batch]
-            print('batch inicializada')
-
-            # Fetch tracking data from API
-            api_responses = fetch_sr_tracking_data_from_api(tracking_numbers)
-
-            # Update records
-            for record in batch:
-                api_data = api_responses.get(record.trackingDistribucion)
-                if api_data:
-                    record.rawJson = api_data
-                else:
-                    logger.warning(f"No retorno data para: {record.trackingDistribucion}")
-
-            # Save updates in bulk
-            with transaction.atomic():
-                SRTrackingData.objects.bulk_update(batch, ['rawJson'])
-                print('batch procesada')
-
-            time.sleep(0.2)  # Rate-limiting delay
-
-        messages.success(request, "Proceso de actualización completado correctamente.")
-    except Exception as e:
-        logger.error(f"Error en el proceso de actualización: {e}")
-        messages.error(request, f"Error durante el procesamiento: {e}")
-
-    # Redirect back to the page to display feedback
-    return redirect('db_manager')
-
-@staff_member_required
-def delete_all_srtrk_records(request):
-    if request.method == "POST":
-        try:
-            SRTrackingData.objects.all().delete()
-            messages.success(request, "Todos los registros fueron eliminadas con exito.")
-        except Exception as e:
-            messages.error(request, f"Ocurrio un eeror durante el proceso: {e}")
-    return redirect('db_manager')
+    logger.handlers[0].flush()
+    return messages

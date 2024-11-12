@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 import pandas as pd
 from usersapp.models import Company
 from dataapp.models import Order, PostalCodes, SRTrackingData, CATrackingData
-from ..dataapp.populateordermodelhelpers import parse_date
+from dataapp.populateordermodelhelpers import parse_date
 import json
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
@@ -13,6 +13,7 @@ from django.db import transaction
 from django.contrib import messages
 import traceback
 import logging
+from dataapp.srapihandler import process_tracking_data
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -318,12 +319,19 @@ def delete_all_orders_cp(request):
 
 @staff_member_required
 def run_SR_api_ingestion_and_log_errors(request):
-    # Run the processing function
-    process_tracking_data()
+    process_tracking_data(update_mode=False)
 
-    # Collect any errors from the logger and add to Django messages
     for record in logger.handlers[0].buffer:
         messages.error(request, record.getMessage())
+    logger.handlers[0].flush()
+    return messages
 
+
+@staff_member_required
+def run_SR_api_update_and_log_errors(request):
+    process_tracking_data(update_mode=True)
+
+    for record in logger.handlers[0].buffer:
+        messages.error(request, record.getMessage())
     logger.handlers[0].flush()
     return messages

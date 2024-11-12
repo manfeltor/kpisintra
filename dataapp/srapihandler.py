@@ -5,35 +5,36 @@ from django.db import IntegrityError
 from django.utils import timezone
 from dataapp.models import SRTrackingData, Order
 import logging
+from decouple import config
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def fetch_data_for_date(planned_date):
     url = f"https://api.simpliroute.com/v1/routes/visits/?planned_date={planned_date}"
+    SR_AUTH_TOKEN = config('SR_AUTH_TOKEN')
     headers = {
-        "authorization": "Token abc123",
+        "authorization": SR_AUTH_TOKEN,
         "content-type": "application/json"
     }
     
-    for attempt in range(3):  # Retry up to 3 times
+    for attempt in range(3):
         try:
             response = requests.get(url, headers=headers)
             if response.status_code == 200:
-                data = response.json()
-                return data  # Return data if successful
+                return response.json()
             else:
                 logger.error(f"Failed to fetch data for {planned_date}: {response.status_code}")
         except requests.RequestException as e:
             logger.error(f"Error on attempt {attempt+1} for date {planned_date}: {e}")
-        time.sleep(0.2)  # Sleep before retrying
-    return None  # Return None if all retries fail
+        time.sleep(0.2)
+    return None
 
 def parse_and_save_data(data):
+    tracking_entries = []
     for entry in data:
         try:
-            # Extract fields from JSON response
-            raw_json = entry
+            # Extract fields
             tracking_id = entry.get("tracking_id")
             status = entry.get("status")
             title = entry.get("title", "")
@@ -47,10 +48,9 @@ def parse_and_save_data(data):
             seller = parts[1] if len(parts) > 2 else None
             pedido = parts[-1] if len(parts) > 2 else None
 
-            # Save to SRTrackingData
-            tracking_data = SRTrackingData(
+            tracking_entry = SRTrackingData(
                 tracking_id=tracking_id,
-                rawJson=raw_json,
+                rawJson=entry,
                 status=status,
                 title=title,
                 tipo=tipo,
@@ -60,34 +60,44 @@ def parse_and_save_data(data):
                 checkout_observation=checkout_observation,
                 planned_date=planned_date
             )
-            tracking_data.save()
-            logger.info(f"Saved tracking data for {tracking_id}")
-        
+            tracking_entries.append(tracking_entry)
+
         except IntegrityError as e:
             logger.error(f"Integrity error saving tracking data for {tracking_id}: {e}")
         except Exception as e:
-            logger.error(f"Unexpected error parsing or saving data: {e}")
+            logger.error(f"Unexpected error parsing or saving data for {tracking_id}: {e}")
 
-def process_tracking_data():
-    # Retrieve min and max dates
-    min_date = Order.objects.earliest("fechaCreacion").fechaCreacion.date()
-    max_date = Order.objects.latest("fechaCreacion").fechaCreacion.date()
+    # Bulk save all tracking data for the date in one go
+    SRTrackingData.objects.bulk_create(tracking_entries, ignore_conflicts=True)
+    logger.info(f"Bulk saved tracking data for {len(tracking_entries)} entries")
+
+def process_tracking_data(update_mode=False):
+    """
+    Process tracking data by fetching from the earliest or latest date 
+    based on update_mode.
     
-    date_range = (max_date - min_date).days
-    dates_to_process = [min_date + timezone.timedelta(days=i) for i in range(date_range + 1)]
+    Parameters:
+    ----------
+    update_mode : bool
+        If True, fetches data starting from the latest planned_date in SRTrackingData (for updates).
+        If False, fetches data starting from the earliest Order.fechaCreacion (for initial population).
+    """
+    if update_mode:
+        # Fetch from the latest date in SRTrackingData for incremental updates
+        start_date = SRTrackingData.objects.latest("planned_date").planned_date + timezone.timedelta(days=1)
+    else:
+        # Fetch from the earliest date in Order for complete population
+        start_date = Order.objects.earliest("fechaCreacion").fechaCreacion.date()
+    
+    # Set end date as the latest date available in Order data
+    end_date = Order.objects.latest("fechaCreacion").fechaCreacion.date()
+    
+    # Calculate date range
+    dates_to_process = [start_date + timezone.timedelta(days=i) for i in range((end_date - start_date).days + 1)]
     
     with ThreadPoolExecutor(max_workers=7) as executor:
-        futures = {}
-        for date in dates_to_process:
-            # Check if data already exists for this date
-            if SRTrackingData.objects.filter(planned_date=date).exists():
-                logger.info(f"Data already exists for {date}. Skipping.")
-                continue
-            
-            # Schedule API fetch for date
-            futures[executor.submit(fetch_data_for_date, date)] = date
-
-        # Process completed futures
+        futures = {executor.submit(fetch_data_for_date, date): date for date in dates_to_process}
+        
         for future in as_completed(futures):
             planned_date = futures[future]
             try:

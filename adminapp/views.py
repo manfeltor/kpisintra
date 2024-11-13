@@ -318,7 +318,7 @@ def delete_all_orders_cp(request):
 
 
 @staff_member_required
-def run_SR_api_ingestion_and_log_errors(request):
+def SR_api_ingestion_populate(request):
     process_tracking_data(update_mode=False)
 
     for record in logger.handlers[0].buffer:
@@ -328,10 +328,21 @@ def run_SR_api_ingestion_and_log_errors(request):
 
 
 @staff_member_required
-def run_SR_api_update_and_log_errors(request):
+def SR_api_ingestion_update(request):
     process_tracking_data(update_mode=True)
 
     for record in logger.handlers[0].buffer:
         messages.error(request, record.getMessage())
     logger.handlers[0].flush()
     return messages
+
+
+@staff_member_required
+def delete_all_SRdata(request):
+    if request.method == "POST":
+        try:
+            SRTrackingData.objects.all().delete()
+            messages.success(request, "Toda la data de los trackings de SR fue eliminada con exito.")
+        except Exception as e:
+            messages.error(request, f"Ocurrio un eeror durante el proceso: {e}")
+    return redirect('db_manager')

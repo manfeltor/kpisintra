@@ -14,6 +14,8 @@ from django.contrib import messages
 import traceback
 import logging
 from dataapp.srapihandler import process_tracking_data
+import csv
+import concurrent.futures
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,128 +29,124 @@ def db_manager(req):
 
 
 # POPULATE ORDER MODEL Main function to process Excel files and populate Order model
+def process_single_row(row, existing_lpns):
+    """Process a single row of the DataFrame, returning an Order object to create or update."""
+    try:
+        pedido = row.get('pedido')
+        if not pedido:
+            raise ValueError("Missing 'pedido' in row")
+        
+        row_json = json.dumps(row.to_dict())
+        seller_name = row['seller']
+        company, _ = Company.objects.get_or_create(name=seller_name)
+
+        # Process tracking data
+        if row.get('trackingTransporte') not in ['', None]:
+            tracking_transporte = row.get('trackingTransporte')
+            tracking_transporte_data, _ = CATrackingData.objects.get_or_create(trackingTransporte=tracking_transporte)
+        else:
+            tracking_transporte_data = None
+
+        postal_code_xlsx = str(int(row.get('codigoPostal')))
+        postal_code_model = PostalCodes.objects.get(cp=postal_code_xlsx)
+
+        if row['lpn'] in existing_lpns:
+            # Update existing order
+            order = Order.objects.get(lpn=row['lpn'])
+            order.pedido = pedido
+            order.flujo = row['flujo']
+            order.seller = company
+            order.sucursal = row['sucursal']
+            order.estadoPedido = row['estadoPedido']
+            order.fechaCreacion = parse_date(row['fechaCreacion'])
+            order.fechaRecepcion = parse_date(row.get('fechaRecepcion', None))
+            order.fechaDespacho = parse_date(row.get('fechaDespacho', None))
+            order.fechaEntrega = parse_date(row.get('fechaEntrega', None))
+            order.estadoLpn = row['estadoLpn']
+            order.provincia = row['provincia']
+            order.localidad = row['localidad']
+            order.zona = row['zona']
+            order.trackingDistribucion = row['trackingDistribucion']
+            order.trackingTransporte = tracking_transporte_data
+            order.codigoPostal = postal_code_model
+            order.order_data = row_json
+            return 'update', order
+        else:
+            # Create a new order
+            new_order = Order(
+                pedido=pedido,
+                flujo=row['flujo'],
+                seller=company,
+                sucursal=row['sucursal'],
+                estadoPedido=row['estadoPedido'],
+                fechaCreacion=parse_date(row['fechaCreacion']),
+                fechaRecepcion=parse_date(row.get('fechaRecepcion', None)),
+                fechaDespacho=parse_date(row.get('fechaDespacho', None)),
+                fechaEntrega=parse_date(row.get('fechaEntrega', None)),
+                lpn=row['lpn'],
+                estadoLpn=row['estadoLpn'],
+                provincia=row['provincia'],
+                localidad=row['localidad'],
+                zona=row['zona'],
+                trackingDistribucion=row['trackingDistribucion'],
+                trackingTransporte=tracking_transporte_data,
+                codigoPostal=postal_code_model,
+                order_data=row_json
+            )
+            return 'create', new_order
+    except Exception as e:
+        # Log errors and return a failed entry
+        print(f"Error processing row: {e}")
+        return 'error', None
+
 @login_required
 def process_orders_from_upload(request):
     if request.method == 'POST' and request.FILES.get('oms_excel_file'):
-        status_messages = []
         successful_orders = 0
         failed_orders = 0
-        batchzise = 1000
+        batch_size = 1000
 
-        try:
-            uploaded_file = request.FILES['oms_excel_file']
+        uploaded_file = request.FILES['oms_excel_file']
+        if not uploaded_file.name.endswith(('.xlsx', '.xls')):
+            messages.error(request, 'Formato de archivo no soportado. Asegurese que esta subiendo un xlsx.')
+            return render(request, 'db_manager.html')
 
-            # Ensure the uploaded file is an Excel file
-            if not uploaded_file.name.endswith(('.xlsx', '.xls')):
-                raise ValueError('Formato de archivo no soportado. Asegurese que esta subiendo un xlsx.')
-            excel_file = uploaded_file.read()
-            excel_io = BytesIO(excel_file)
-            df = pd.read_excel(excel_io)
+        df = pd.read_excel(BytesIO(uploaded_file.read()))
 
-            orders_to_create = []
-            orders_to_update = []
+        # Get all existing LPNs to check for duplicates
+        existing_lpns = set(Order.objects.filter(lpn__in=df['lpn']).values_list('lpn', flat=True))
 
-            # Gather all LPNs to check for existing ones
-            existing_lpns = set(Order.objects.filter(lpn__in=df['lpn']).values_list('lpn', flat=True))
+        # Prepare lists to collect results for bulk operations
+        orders_to_create = []
+        orders_to_update = []
 
-            with transaction.atomic():
-                for _, row in df.iterrows():
-                    try:
-                        pedido = row.get('pedido')
-                        if not pedido:
-                            raise ValueError("Missing 'pedido' in row")
-                        
-                        row_json = json.dumps(row.to_dict())
+        # Process rows concurrently
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+            futures = [executor.submit(process_single_row, row, existing_lpns) for _, row in df.iterrows()]
 
-                        seller_name = row['seller']
-                        company, _ = Company.objects.get_or_create(name=seller_name)
+            for future in concurrent.futures.as_completed(futures):
+                result_type, order = future.result()
+                if result_type == 'create':
+                    orders_to_create.append(order)
+                    successful_orders += 1
+                elif result_type == 'update':
+                    orders_to_update.append(order)
+                    successful_orders += 1
+                else:
+                    failed_orders += 1
 
-                        if row.get('trackingDistribucion') not in ['', None]:
-                            tracking_distribucion = row.get('trackingDistribucion')
-                            tracking_distribucion_data, created = SRTrackingData.objects.get_or_create(trackingDistribucion=tracking_distribucion)
-                        else:
-                            tracking_transporte_data = None
-
-                        if row.get('trackingTransporte') not in ['', None]:
-                            tracking_transporte = row.get('trackingTransporte')
-                            tracking_transporte_data, created = CATrackingData.objects.get_or_create(trackingTransporte=tracking_transporte)
-                        else:
-                            tracking_transporte_data = None
-        
-                        postal_code_xlsx = str(int(row.get('codigoPostal')))
-                        
-                        try:
-                            postal_code_model = PostalCodes.objects.get(cp=postal_code_xlsx)
-                        except PostalCodes.DoesNotExist:
-                            raise ValueError(f"Postal code {postal_code_xlsx} not found in PostalCodes database.")
-
-                        # Check if the order with this LPN already exists
-                        if row['lpn'] in existing_lpns:
-                            # Update existing order
-                            order = Order.objects.get(lpn=row['lpn'])
-                            order.pedido = pedido
-                            order.flujo = row['flujo']
-                            order.seller = company
-                            order.sucursal = row['sucursal']
-                            order.estadoPedido = row['estadoPedido']
-                            order.fechaCreacion = parse_date(row['fechaCreacion'])
-                            order.fechaRecepcion = parse_date(row.get('fechaRecepcion', None))
-                            order.fechaDespacho = parse_date(row.get('fechaDespacho', None))
-                            order.fechaEntrega = parse_date(row.get('fechaEntrega', None))
-                            order.estadoLpn = row['estadoLpn']
-                            order.provincia = row['provincia']
-                            order.localidad = row['localidad']
-                            order.zona = row['zona']
-                            order.trackingDistribucion = tracking_distribucion_data
-                            order.trackingTransporte = tracking_transporte_data
-                            order.codigoPostal = postal_code_model
-                            order.order_data = row_json
-                            orders_to_update.append(order)
-                        else:
-                            # Create a new order
-                            orders_to_create.append(Order(
-                                pedido=pedido,
-                                flujo=row['flujo'],
-                                seller=company,
-                                sucursal=row['sucursal'],
-                                estadoPedido=row['estadoPedido'],
-                                fechaCreacion=parse_date(row['fechaCreacion']),
-                                fechaRecepcion=parse_date(row.get('fechaRecepcion', None)),
-                                fechaDespacho=parse_date(row.get('fechaDespacho', None)),
-                                fechaEntrega=parse_date(row.get('fechaEntrega', None)),
-                                lpn=row['lpn'],
-                                estadoLpn=row['estadoLpn'],
-                                provincia=row['provincia'],
-                                localidad=row['localidad'],
-                                zona=row['zona'],
-                                trackingDistribucion=tracking_distribucion_data,
-                                trackingTransporte=tracking_transporte_data,
-                                codigoPostal=postal_code_model,
-                                order_data=row_json
-                            ))
-                        successful_orders += 1
-                    except Exception as e:
-                        failed_orders += 1
-                        status_messages.append(f"Error processing row: {e}")
-                        print(f"Error processing row: {e}")
-
-            # Bulk create and update orders
-            Order.objects.bulk_create(orders_to_create, batch_size=batchzise)
-            Order.objects.bulk_update(orders_to_update, [
+        # Perform bulk create and update after processing
+        with transaction.atomic():
+            Order.objects.bulk_create(orders_to_create, batch_size=batch_size)
+            Order.objects.bulk_update(orders_to_update, fields=[
                 'pedido', 'flujo', 'seller', 'sucursal', 'estadoPedido', 'fechaCreacion',
                 'fechaRecepcion', 'fechaDespacho', 'fechaEntrega', 'estadoLpn', 'provincia',
                 'localidad', 'zona', 'trackingDistribucion', 'trackingTransporte', 'codigoPostal', 'order_data'
-            ], batch_size=batchzise)
+            ], batch_size=batch_size)
 
-            messages.success(request, f"Procesamiento completo: {successful_orders} ordenes guardadas, {failed_orders} ordenes fallidas.")
-
-        
-        except Exception as e:
-            tb = traceback.format_exc()
-            messages.error(request, f"Error reading file: {e} trace: {tb}")
-            
+        messages.success(request, f"Procesamiento completo: {successful_orders} ordenes guardadas, {failed_orders} ordenes fallidas.")
         return render(request, 'db_manager.html')
-
+    
     return render(request, 'db_manager.html')
     
 
@@ -319,22 +317,32 @@ def delete_all_orders_cp(request):
 
 @staff_member_required
 def SR_api_ingestion_populate(request):
-    process_tracking_data(update_mode=False)
+    process_tracking_data(request, update_mode=False)
+    for handler in logger.handlers:
+        if hasattr(handler, 'buffer'):
+            for record in handler.buffer:
+                if record.levelname == "INFO":
+                    messages.info(request, record.getMessage())
+                elif record.levelname == "ERROR":
+                    messages.error(request, record.getMessage())
+            handler.flush()
 
-    for record in logger.handlers[0].buffer:
-        messages.error(request, record.getMessage())
-    logger.handlers[0].flush()
-    return messages
+    return redirect('db_manager')
 
 
 @staff_member_required
 def SR_api_ingestion_update(request):
-    process_tracking_data(update_mode=True)
+    process_tracking_data(request, update_mode=True)
+    for handler in logger.handlers:
+        if hasattr(handler, 'buffer'):
+            for record in handler.buffer:
+                if record.levelname == "INFO":
+                    messages.info(request, record.getMessage())
+                elif record.levelname == "ERROR":
+                    messages.error(request, record.getMessage())
+            handler.flush()
 
-    for record in logger.handlers[0].buffer:
-        messages.error(request, record.getMessage())
-    logger.handlers[0].flush()
-    return messages
+    return redirect('db_manager')
 
 
 @staff_member_required
@@ -346,3 +354,34 @@ def delete_all_SRdata(request):
         except Exception as e:
             messages.error(request, f"Ocurrio un eeror durante el proceso: {e}")
     return redirect('db_manager')
+
+
+@staff_member_required
+def export_srtrackingdata_to_csv(request):
+    # Create the HttpResponse object with CSV headers.
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="sr_tracking_data.csv"'
+
+    writer = csv.writer(response)
+    # Write the header row based on your model's fields
+    writer.writerow([
+        'tracking_id', 'status', 'title', 'tipo', 'pedido', 'seller', 
+        'reference', 'checkout_observation', 'planned_date', 'rawJson'
+    ])
+
+    # Write data rows from the SRTrackingData model
+    for record in SRTrackingData.objects.all():
+        writer.writerow([
+            record.tracking_id,
+            record.status,
+            record.title,
+            record.tipo,
+            record.pedido,
+            record.seller,
+            record.reference,
+            record.checkout_observation,
+            record.planned_date,
+            record.rawJson
+        ])
+
+    return response

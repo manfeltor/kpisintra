@@ -6,7 +6,9 @@ def entregas_panel(req):
 
 
 def entregas_amba(req):
-    df = get_orders_dataframe(fields=['pedido'], SRdeserialization=['title'])
-    html_table = df.head(20).to_html(classes="table table-striped table-bordered", index=False)
     
-    return render(req, "entregas_amba.html", {"table": html_table})
+    return render(req, "entregas_amba.html")
+
+def entregas_amba_gral(req):
+    
+    return render(req, "entregas_amba_gral.html")

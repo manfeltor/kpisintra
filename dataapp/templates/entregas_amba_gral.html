@@ -30,26 +30,5 @@
 {% endblock %}
 
 {% block main_page %}
-<div class="w3-container" style="margin-top:50px" id="showcase">
-    <h1 class="w3-jumbo"><b>Panel de métricas de entregas AMBA INTRALOG</b></h1>
-    <div class="w3-container" id="services" style="margin-top:30px">
-        <hr style="width:50px;border:5px solid #000000" class="w3-round">
-        <p>Bienvenido al panel de KPIs para las operaciones de entregas AMBA</p>
-        <p>Vista general:</p>
-    </div>
-</div>
 
-<div class="w3-container" id="ambadiv" style="margin-top:70px">
-  <h1 class="w3-xxxlarge w3-text-red"><b>Vista general entregas</b></h1>
-  <hr style="width:50px;border:5px solid #f33d30" class="w3-round">
-  <p>En esta vista podrás analizar la proporción relativizada de entregas exitosas y fallidas a lo largo del tiempo.</p>
-  <p>Además, tendrás acceso a una visión general del desglose de las entregas fallidas, permitiendo identificar patrones y tendencias clave en el desempeño operativo.</p>
-  <a href="{% url 'entregas_amba_gral' %}" class="w3-button w3-green w3-margin-top" >ir a Entregas Vista general</a>
-
-  <h1 class="w3-xxxlarge w3-text-red" style="margin-top:70px"><b>Vista descriptiva Fallidos</b></h1>
-  <hr style="width:50px;border:5px solid #f33d30" class="w3-round">
-  <p>En esta vista podrás analizar el desglose de las entregas fallidas, diferenciando entre las atribuibles al cliente y aquellas derivadas de problemas logísticos.</p>
-  <p>Esto te permitirá comprender mejor las razones detrás de los fallos y adoptar estrategias específicas para su mejora.</p>
-  <a href="#" class="w3-button w3-green w3-margin-top" >ir a Entregas Vista general</a>
-</div>
 {% endblock %}

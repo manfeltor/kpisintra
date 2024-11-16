@@ -12,6 +12,14 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 import os
+from decouple import config
+
+
+DBUSR = config('DBUSR')
+DBNAME = config('DBNAME')
+DBHOST = config('DBHOST')
+DBPORT = config('DBPORT')
+DBPASS = config('DBPASS')
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -83,11 +91,11 @@ WSGI_APPLICATION = 'kpisintra.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',  # MySQL database engine
-        'NAME': 'kpislocaldb',          # Name of your MySQL database
-        'USER': 'root',         # MySQL username
-        'PASSWORD': 'Sussini.1341',     # MySQL password
-        'HOST': 'localhost',                   # Usually localhost if it's on the same server
-        'PORT': '3306',                        # Default MySQL port (can be left empty if default)
+        'NAME': DBNAME,          # Name of your MySQL database
+        'USER': DBUSR,         # MySQL username
+        'PASSWORD': DBPASS,     # MySQL password
+        'HOST': DBHOST,                   # Usually localhost if it's on the same server
+        'PORT': DBPORT,                        # Default MySQL port (can be left empty if default)
     }
 }
 

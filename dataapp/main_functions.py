@@ -1,11 +1,6 @@
 import pandas as pd
-from django.db.models import Prefetch
 from .models import Order
 from typing import List, Optional
-
-import pandas as pd
-from typing import List, Optional
-from .models import Order
 
 def get_orders_dataframe(
     fields: Optional[List[str]] = None,

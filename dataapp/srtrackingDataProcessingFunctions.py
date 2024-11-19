@@ -3,13 +3,21 @@ from django.db.models import Count
 from dataapp.models import SRTrackingData, sr_checkout_observations_matrix
 from datetime import datetime, timedelta
 from django.utils.timezone import now
+from usersapp.models import CustomUser
 
-def get_sr_tracking_summary():
+def get_sr_tracking_summary(request):
     """
     Query the SRTrackingData model to summarize the number of trackings grouped by
     planned_date, checkout_observation, and seller. Limit to the last 12 months and return
     the result as a pandas DataFrame.
     
+    Parameters:
+    -----------
+    request : HttpRequest
+        The Django request object to access user details.
+    seller : str, optional
+        The seller name to filter data. Defaults to None.
+
     Returns:
     --------
     pd.DataFrame
@@ -19,19 +27,27 @@ def get_sr_tracking_summary():
     cutoff_date = now().date().replace(day=1) - timedelta(days=395)
 
     # ORM query, filtered for the last 12 months
-    query = SRTrackingData.objects.filter(
-        planned_date__gte=cutoff_date
-    ).values(
-        'planned_date', 'checkout_observation', 'seller'
-    ).annotate(
-        tracking_count=Count('tracking_id')
-    ).order_by('planned_date', 'checkout_observation', 'seller')
-    
+    user_role = request.user.role
+
+    # if user_role == CustomUser.CLIENT:
+    query = SRTrackingData.objects.filter(planned_date__gte=cutoff_date)
+    query = query.filter(tipo="DIST")
+
+
+    if user_role == CustomUser.CLIENT:
+        seller = request.user.company
+        query = query.filter(seller=seller)
+        
+    query = query.values(
+            'planned_date', 'checkout_observation', 'seller'
+        ).annotate(
+            tracking_count=Count('tracking_id')
+        ).order_by('planned_date', 'checkout_observation', 'seller')
+        
     # Convert QuerySet to DataFrame
     df = pd.DataFrame.from_records(query)
     
-    return df
-
+    return df, cutoff_date
 
 def enrich_sr_tracking_summary(df):
     """
@@ -51,16 +67,18 @@ def enrich_sr_tracking_summary(df):
     """
     # Convert the sr_checkout_observations_matrix into a dict for faster lookups
     observations_dict = {
-        entry["id"]: {
-            "label": entry["label"],
-            "responsibility": entry.get("responsibility")
-        }
-        for entry in sr_checkout_observations_matrix
+    key: {
+        "label": value["label"],
+        "responsibility": value.get("responsibility"),
+        "type": value.get("type")
     }
+    for key, value in sr_checkout_observations_matrix.items()
+}
 
     # Add 'label' and 'responsibility' to the DataFrame
     df["label"] = df["checkout_observation"].map(lambda obs: observations_dict.get(obs, {}).get("label"))
     df["responsibility"] = df["checkout_observation"].map(lambda obs: observations_dict.get(obs, {}).get("responsibility"))
+    df["type"] = df["checkout_observation"].map(lambda obs: observations_dict.get(obs, {}).get("type"))
     
     return df
 
@@ -91,7 +109,7 @@ def get_monthly_tracking_percentages(df):
 
     # Group by month and type ('failed'/'completed')
     monthly_summary = (
-        df.groupby(['month', 'type'])
+        df.groupby(['month', 'type', 'seller'])
         .agg(total_count=('tracking_count', 'sum'))
         .reset_index()
     )

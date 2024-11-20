@@ -79,7 +79,6 @@ def enrich_sr_tracking_summary(df):
     df["label"] = df["checkout_observation"].map(lambda obs: observations_dict.get(obs, {}).get("label"))
     df["responsibility"] = df["checkout_observation"].map(lambda obs: observations_dict.get(obs, {}).get("responsibility"))
     df["type"] = df["checkout_observation"].map(lambda obs: observations_dict.get(obs, {}).get("type"))
-    
     return df
 
 def get_monthly_tracking_percentages(df):
@@ -109,7 +108,7 @@ def get_monthly_tracking_percentages(df):
 
     # Group by month and type ('failed'/'completed')
     monthly_summary = (
-        df.groupby(['month', 'type', 'seller'])
+        df.groupby(['month', 'type', 'seller', 'responsibility'])
         .agg(total_count=('tracking_count', 'sum'))
         .reset_index()
     )

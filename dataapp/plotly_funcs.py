@@ -23,7 +23,9 @@ def fallidos_vs_completados_graph(df, start_date, end_date, seller=None):
     """
 
     start_date = pd.to_datetime(start_date)
+    start_date = start_date.replace(tzinfo=None)
     end_date = pd.to_datetime(end_date)
+    end_date = end_date.replace(tzinfo=None)
     # Filter the DataFrame based on the date range and seller
     filtered_df = df[
         (df['month'] >= (start_date)) &
@@ -31,6 +33,13 @@ def fallidos_vs_completados_graph(df, start_date, end_date, seller=None):
     ]
     if seller:
         filtered_df = filtered_df[filtered_df['seller'] == seller]
+
+
+    filtered_df = (
+    filtered_df.groupby(['month', 'type'])
+    .agg({'percentage': 'sum'})  # Aggregate percentages across all sellers if no specific seller
+    .reset_index()
+    )
 
     # Pivot the data for plotting
     pivot_table = filtered_df.pivot(index='month', columns='type', values='percentage').fillna(0)

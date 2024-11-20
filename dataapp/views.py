@@ -17,6 +17,7 @@ def entregas_amba_gral(req):
     df_query, cutoff_date = get_sr_tracking_summary(req)
     df_translated = enrich_sr_tracking_summary(df_query)
     relativized_df = get_monthly_tracking_percentages(df_translated)
+    print(relativized_df)
 
     if req.GET.get('start_date'):
         start_date = req.GET.get('start_date')
@@ -31,6 +32,9 @@ def entregas_amba_gral(req):
     else:
         seller = None
 
-    graph_html = fallidos_vs_completados_graph(relativized_df, start_date, end_date, seller)
+    gral_graph_html = fallidos_vs_completados_graph(relativized_df, start_date, end_date, seller)
+    # failed_graph_html = failed_responsibility_breakdown_graph(relativized_df, start_date, end_date, seller)
     
-    return render(req, "entregas_amba_gral.html", {"graph_html": graph_html})
+    return render(req, "entregas_amba_gral.html", context={
+         "gral_graph_html": gral_graph_html
+        })

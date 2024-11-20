@@ -26,12 +26,12 @@ sr_checkout_observations_matrix = {
     "b068cd31-74c3-4f36-b60a-5f0a7b8837dd": {
         "type": "completed",
         "label": "Entregado",
-        "responsibility": None
+        "responsibility": "N/A"
     },
     "e1b34560-430b-450d-a4df-55066d09172d": {
         "type": "completed",
         "label": "colectado",
-        "responsibility": None
+        "responsibility": "N/A"
     },
     "90fce0c5-4271-40f3-9f4f-71a6e3ee6e23": {
         "type": "failed",
@@ -41,7 +41,7 @@ sr_checkout_observations_matrix = {
     "c689bc80-a295-458e-a858-1251afc1925c": {
         "type": "completed",
         "label": "devolucionCliente",
-        "responsibility": None
+        "responsibility": "N/A"
     },
     "1190098c-5ae2-467f-9ff8-ab839ac0555a": {
         "type": "failed",

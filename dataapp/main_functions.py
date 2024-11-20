@@ -87,4 +87,33 @@ def get_orders_dataframe(
     
     return df
 
+def calculate_relation(df, A, C):
+    """
+    Calculate the sum of 'C' for each 'A' value and compute the relation for each row.
 
+    Parameters:
+    ----------
+    df : pd.DataFrame
+        DataFrame containing columns 'A', 'B', and 'C'.    
+    
+    A : str
+        Name of the category column to make calculations
+
+    C : str
+        Name of the column with the values for each category
+
+    Returns:
+    --------
+    pd.DataFrame
+        DataFrame with additional columns 'Sum' and 'relation'.
+    """
+    # Calculate the sum of 'C' for each 'A' value
+    sum_df = df.groupby(A)[C].sum().reset_index().rename(columns={C: 'Sum'})
+    
+    # Merge the sum back into the original DataFrame
+    df = df.merge(sum_df, on=A)
+    
+    # Calculate the relation for each row
+    df['relation'] = df[C] / df['Sum']
+    
+    return df

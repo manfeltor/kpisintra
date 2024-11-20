@@ -37,9 +37,14 @@
 {% endblock %}
 
 {% block main_page %}
-{% if graph_html %}
+{% if gral_graph_html %}
     <div>
-        {{ graph_html|safe }}
+        {{ gral_graph_html|safe }}
+    </div>
+{% endif %}
+{% if failed_graph_html %}
+    <div>
+        {{ failed_graph_html|safe }}
     </div>
 {% endif %}
 {% endblock %}

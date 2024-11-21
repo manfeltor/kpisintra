@@ -17,35 +17,11 @@
   </div>
   <div class="w3-bar-block">
 
-    <form method="get" action="">
-      <label for="start_date">Desde:</label>
-      <input
-        type="date"
-        name="start_date"
-        class="w3-input"
-        value="{{ request.GET.start_date|default:'' }}"
-      />
-      <label for="end_date">Hasta:</label>
-      <input
-        type="date"
-        name="end_date"
-        class="w3-input"
-        value="{{ request.GET.end_date|default:'' }}"
-      />
-      <button type="submit" class="w3-button w3-block w3-green w3-margin-top">
-        Filtrar
-      </button>
-    </form>
-
-    <label for="sellers">Seleccionar Vendedores:</label>
-    <select name="sellers" id="sellers" class="w3-select" multiple>
-      {% for company in companies %}
-      <option value="{{ company.name }}" 
-              {% if company.name in request.GET.sellers %}selected{% endif %}>
-          {{ company.name }}
-      </option>
-    {% endfor %}
-    </select>
+    <label for="start_date">Desde:</label>
+    <input type="date" name="start_date" class="w3-input" value="{{ request.GET.start_date }}">
+    <label for="end_date">Hasta:</label>
+    <input type="date" name="end_date" class="w3-input" value="{{ request.GET.end_date }}">
+    <button type="submit" class="w3-button w3-block w3-green w3-margin-top">Filtrar</button>
 
     <a href="{% url 'home' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;margin-top:30px;">Home</a>
     {% if request.user.is_authenticated %}

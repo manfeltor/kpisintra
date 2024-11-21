@@ -2,7 +2,7 @@ import plotly.graph_objects as go
 import pandas as pd
 from .main_functions import calculate_relation
 
-def fallidos_vs_completados_graph(df, start_date, end_date, seller=None):
+def fallidos_vs_completados_graph(df, start_date, end_date, sellers=None):
     """
     Generate an interactive stacked bar graph for "Fallidos vs Completados" percentages using Plotly.
 
@@ -14,7 +14,7 @@ def fallidos_vs_completados_graph(df, start_date, end_date, seller=None):
         Start date for filtering.
     end_date : datetime
         End date for filtering.
-    seller : str, optional
+    seller : list, optional
         Seller name to filter by. Defaults to None (include all sellers).
 
     Returns:
@@ -22,6 +22,8 @@ def fallidos_vs_completados_graph(df, start_date, end_date, seller=None):
     str
         Plotly HTML div as a string to embed in the template.
     """
+
+    print(sellers)
 
     start_date = pd.to_datetime(start_date)
     start_date = start_date.replace(tzinfo=None)
@@ -32,8 +34,11 @@ def fallidos_vs_completados_graph(df, start_date, end_date, seller=None):
         (df['month'] >= (start_date)) &
         (df['month'] <= (end_date))
     ]
-    if seller:
-        filtered_df = filtered_df[filtered_df['seller'] == seller]
+    if sellers:
+        # filtered_df = filtered_df[filtered_df['seller'] == sellers]
+        filtered_df = filtered_df[filtered_df['seller'].isin(sellers)]
+
+    filtered_df['month'] = filtered_df['month'].dt.strftime('%Y-%m-%d')
 
 
     filtered_df = (
@@ -59,11 +64,14 @@ def fallidos_vs_completados_graph(df, start_date, end_date, seller=None):
     fig.update_layout(
         barmode='stack',
         title="Fallidos vs Completados - Últimos 12 Meses",
-        xaxis_title="Mes",
+        xaxis=dict(
+        title="Mes",
+        type="category",  # Force x-axis to be categorical
+        tickformat='%b %Y'
+        ),
         yaxis_title="Porcentaje (%)",
         legend_title="Tipo",
         template="plotly_white",
-        xaxis=dict(tickformat='%b %Y'),
         margin=dict(l=40, r=40, t=40, b=40),
         hovermode="x unified"
     )
@@ -72,7 +80,7 @@ def fallidos_vs_completados_graph(df, start_date, end_date, seller=None):
     return fig.to_html(full_html=False)
 
 
-def failed_responsibility_breakdown_graph(df, start_date, end_date, seller=None):
+def failed_responsibility_breakdown_graph(df, start_date, end_date, sellers=None):
     """
     Generate a bar chart to show failed tracking reasons broken down by responsibility.
 
@@ -104,13 +112,17 @@ def failed_responsibility_breakdown_graph(df, start_date, end_date, seller=None)
     ]
 
     # If a seller is specified, filter for that seller
-    if seller:
-        filtered_df = filtered_df[filtered_df['seller'] == seller]
+    if sellers:
+        # filtered_df = filtered_df[filtered_df['seller'] == sellers]
+        filtered_df = filtered_df[filtered_df['seller'].isin(sellers)]
+
+
+    filtered_df['month'] = filtered_df['month'].dt.strftime('%Y-%m-%d')
 
     filtered_df1 = (
     filtered_df.groupby(['month', 'type', 'responsibility'], as_index=False)
     .agg({'percentage': 'sum'})
-)
+    )
 
     filtered_df2 = filtered_df1[filtered_df1['type'] == 'failed']
 
@@ -137,7 +149,5 @@ def failed_responsibility_breakdown_graph(df, start_date, end_date, seller=None)
         margin=dict(l=40, r=40, t=40, b=40),
         hovermode="x unified"
     )
-
-
 
     return fig.to_html(full_html=False)

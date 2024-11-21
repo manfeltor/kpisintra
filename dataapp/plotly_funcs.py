@@ -1,5 +1,6 @@
 import plotly.graph_objects as go
 import pandas as pd
+from .main_functions import calculate_relation
 
 def fallidos_vs_completados_graph(df, start_date, end_date, seller=None):
     """
@@ -68,4 +69,75 @@ def fallidos_vs_completados_graph(df, start_date, end_date, seller=None):
     )
 
     # Return the Plotly div
+    return fig.to_html(full_html=False)
+
+
+def failed_responsibility_breakdown_graph(df, start_date, end_date, seller=None):
+    """
+    Generate a bar chart to show failed tracking reasons broken down by responsibility.
+
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        The relativized DataFrame from the previous graph.
+    start_date : datetime
+        Start date for filtering.
+    end_date : datetime
+        End date for filtering.
+    seller : str, optional
+        If provided, filters the data for a specific seller.
+
+    Returns:
+    --------
+    str
+        The HTML representation of the Plotly graph.
+    """
+    start_date = pd.to_datetime(start_date)
+    start_date = start_date.replace(tzinfo=None)
+    end_date = pd.to_datetime(end_date)
+    end_date = end_date.replace(tzinfo=None)
+
+    # Filter for the specified date range
+    filtered_df = df[
+        (df['month'] >= start_date) & 
+        (df['month'] <= end_date)
+    ]
+
+    # If a seller is specified, filter for that seller
+    if seller:
+        filtered_df = filtered_df[filtered_df['seller'] == seller]
+
+    filtered_df1 = (
+    filtered_df.groupby(['month', 'type', 'responsibility'], as_index=False)
+    .agg({'percentage': 'sum'})
+)
+
+    filtered_df2 = filtered_df1[filtered_df1['type'] == 'failed']
+
+    pivot_table = filtered_df2.pivot(index='month', columns='responsibility', values='percentage').fillna(0)
+
+    fig = go.Figure()
+    for col in pivot_table.columns:
+        fig.add_trace(go.Bar(
+            x=pivot_table.index,
+            y=pivot_table[col],
+            name=col,
+            hoverinfo="x+y+name"
+        ))
+
+    # Update layout for better visualization
+    fig.update_layout(
+        barmode='stack',
+        title="Desambiguacion concepto fallidos",
+        xaxis_title="Mes",
+        yaxis_title="Porcentaje relativo (%)",
+        legend_title="Tipo",
+        template="plotly_white",
+        xaxis=dict(tickformat='%b %Y'),
+        margin=dict(l=40, r=40, t=40, b=40),
+        hovermode="x unified"
+    )
+
+
+
     return fig.to_html(full_html=False)

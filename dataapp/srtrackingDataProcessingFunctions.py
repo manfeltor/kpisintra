@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from django.utils.timezone import now
 from usersapp.models import CustomUser
 
-def get_sr_tracking_summary(request):
+def get_sr_tracking_summary(request, sellers_objects=None):
     """
     Query the SRTrackingData model to summarize the number of trackings grouped by
     planned_date, checkout_observation, and seller. Limit to the last 12 months and return
@@ -25,6 +25,7 @@ def get_sr_tracking_summary(request):
     """
     # Calculate the cutoff date for 12 months ago
     cutoff_date = now().date().replace(day=1) - timedelta(days=395)
+    # cutoff_date = now().date().replace(day=1)
 
     # ORM query, filtered for the last 12 months
     user_role = request.user.role
@@ -33,10 +34,12 @@ def get_sr_tracking_summary(request):
     query = SRTrackingData.objects.filter(planned_date__gte=cutoff_date)
     query = query.filter(tipo="DIST")
 
-
     if user_role == CustomUser.CLIENT:
         seller = request.user.company
         query = query.filter(seller=seller)
+    elif sellers_objects:
+        sellers = [seller.name for seller in sellers_objects] if sellers_objects else None
+        query = query.filter(seller__in=sellers)
         
     query = query.values(
             'planned_date', 'checkout_observation', 'seller'
@@ -46,8 +49,11 @@ def get_sr_tracking_summary(request):
         
     # Convert QuerySet to DataFrame
     df = pd.DataFrame.from_records(query)
+
+    print(df)
     
-    return df, cutoff_date
+    return df
+
 
 def enrich_sr_tracking_summary(df):
     """

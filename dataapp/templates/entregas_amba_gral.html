@@ -17,7 +17,22 @@
   </div>
   <div class="w3-bar-block">
 
-    <form method="get" action="">
+    <form method="post" action="">
+      {% csrf_token %}
+      <div>
+        {{ form.start_date.label_tag }} {{ form.start_date }}
+      </div>
+      <div>
+        {{ form.end_date.label_tag }} {{ form.end_date }}
+      </div>
+      <div>
+        {{ form.sellers.label_tag }}
+        {{ form.sellers }}
+      </div>
+      <button type="submit" class="w3-button w3-block w3-green w3-margin-top">Aplicar Filtros</button>
+    </form>
+
+    <!-- <form method="get" action="">
       <label for="start_date">Desde:</label>
       <input
         type="date"
@@ -45,7 +60,7 @@
           {{ company.name }}
       </option>
     {% endfor %}
-    </select>
+    </select> -->
 
     <a href="{% url 'home' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;margin-top:30px;">Home</a>
     {% if request.user.is_authenticated %}

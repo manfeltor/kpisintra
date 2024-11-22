@@ -4,8 +4,9 @@ from .srtrackingDataProcessingFunctions import get_monthly_tracking_percentages
 from django.utils.timezone import now
 from .plotly_funcs import fallidos_vs_completados_graph, failed_responsibility_breakdown_graph
 from django.core.exceptions import ValidationError
-from datetime import datetime
+from datetime import datetime, timedelta
 from usersapp.models import Company
+from .forms import FilterForm
 
 def entregas_panel(req):
     return render(req, "kpisentregas.html")
@@ -18,51 +19,38 @@ def entregas_amba(req):
 
 def entregas_amba_gral(req):
 
+    form = FilterForm(req.POST or None)
+
     companies = Company.objects.all()
 
-    df_query, cutoff_date = get_sr_tracking_summary(req)
-    df_translated = enrich_sr_tracking_summary(df_query)
-    relativized_df = get_monthly_tracking_percentages(df_translated)
+    cutoff_date = now().date().replace(day=1) - timedelta(days=395)
 
-    try:
-        # Parse and validate start_date
-        start_date = req.GET.get('start_date')
-        if start_date:
-            start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
-        else:
-            start_date = cutoff_date  # Default to 12 months ago
+    if form.is_valid():
+        start_date = form.cleaned_data.get('start_date') or cutoff_date
+        end_date = form.cleaned_data.get('end_date') or now()
+        sellers = form.cleaned_data.get('sellers') or None
 
-        # Parse and validate end_date
-        end_date = req.GET.get('end_date')
-        if end_date:
-            end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
-        else:
-            end_date = now().date()  # Default to today
-
-        # Swap dates if start_date is after end_date
-        if start_date > end_date:
-            start_date, end_date = end_date, start_date
-
-    except (ValidationError, ValueError):
-        # If invalid dates are passed, fallback to default range
+    else:
         start_date = cutoff_date
-        end_date = now().date()
+        end_date = now()
+        sellers = None
 
-    # Check for seller filtering (to be integrated later)
-    sellers = req.GET.getlist('sellers')
-
-    # Fetch and process data
-    df_query, cutoff_date = get_sr_tracking_summary(req)
+    df_query = get_sr_tracking_summary(req, sellers)
     df_translated = enrich_sr_tracking_summary(df_query)
     relativized_df = get_monthly_tracking_percentages(df_translated)
 
-    # Generate graphs with the filtered data
+    # Ensure start_date and end_date are `datetime.date` objects
+    if isinstance(start_date, str):
+        start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+    if isinstance(end_date, str):
+        end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+
     gral_graph_html = fallidos_vs_completados_graph(relativized_df, start_date, end_date, sellers)
     failed_graph_html = failed_responsibility_breakdown_graph(relativized_df, start_date, end_date, sellers)
 
-    # Render the view with the context
     return render(req, "entregas_amba_gral.html", context={
         "gral_graph_html": gral_graph_html,
         "failed_graph_html": failed_graph_html,
         "companies": companies,
+        "form": form
     })

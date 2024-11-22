@@ -2,7 +2,7 @@ import plotly.graph_objects as go
 import pandas as pd
 from .main_functions import calculate_relation
 
-def fallidos_vs_completados_graph(df, start_date, end_date, sellers=None):
+def fallidos_vs_completados_graph(df, start_date, end_date, sellers_objects=None):
     """
     Generate an interactive stacked bar graph for "Fallidos vs Completados" percentages using Plotly.
 
@@ -23,7 +23,6 @@ def fallidos_vs_completados_graph(df, start_date, end_date, sellers=None):
         Plotly HTML div as a string to embed in the template.
     """
 
-    print(sellers)
 
     start_date = pd.to_datetime(start_date)
     start_date = start_date.replace(tzinfo=None)
@@ -34,12 +33,17 @@ def fallidos_vs_completados_graph(df, start_date, end_date, sellers=None):
         (df['month'] >= (start_date)) &
         (df['month'] <= (end_date))
     ]
+
+    sellers = [seller.name for seller in sellers_objects] if sellers_objects else None
+
+    print(sellers)
+    print(sellers_objects)
+
     if sellers:
         # filtered_df = filtered_df[filtered_df['seller'] == sellers]
         filtered_df = filtered_df[filtered_df['seller'].isin(sellers)]
 
     filtered_df['month'] = filtered_df['month'].dt.strftime('%Y-%m-%d')
-
 
     filtered_df = (
     filtered_df.groupby(['month', 'type'])
@@ -80,7 +84,7 @@ def fallidos_vs_completados_graph(df, start_date, end_date, sellers=None):
     return fig.to_html(full_html=False)
 
 
-def failed_responsibility_breakdown_graph(df, start_date, end_date, sellers=None):
+def failed_responsibility_breakdown_graph(df, start_date, end_date, sellers_objects=None):
     """
     Generate a bar chart to show failed tracking reasons broken down by responsibility.
 
@@ -111,11 +115,11 @@ def failed_responsibility_breakdown_graph(df, start_date, end_date, sellers=None
         (df['month'] <= end_date)
     ]
 
+    sellers = [seller.name for seller in sellers_objects] if sellers_objects else None
+
     # If a seller is specified, filter for that seller
     if sellers:
-        # filtered_df = filtered_df[filtered_df['seller'] == sellers]
         filtered_df = filtered_df[filtered_df['seller'].isin(sellers)]
-
 
     filtered_df['month'] = filtered_df['month'].dt.strftime('%Y-%m-%d')
 

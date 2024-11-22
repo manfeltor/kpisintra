@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from django.utils.timezone import now
 from usersapp.models import CustomUser
 
-def get_sr_tracking_summary(request, sellers_objects=None):
+def get_sr_tracking_summary(request, sellers_objects=None, failed=False):
     """
     Query the SRTrackingData model to summarize the number of trackings grouped by
     planned_date, checkout_observation, and seller. Limit to the last 12 months and return
@@ -34,6 +34,9 @@ def get_sr_tracking_summary(request, sellers_objects=None):
     query = SRTrackingData.objects.filter(planned_date__gte=cutoff_date)
     query = query.filter(tipo="DIST")
 
+    if failed:
+        query = query.filter(status='failed')
+
     if user_role == CustomUser.CLIENT:
         seller = request.user.company
         query = query.filter(seller=seller)
@@ -50,8 +53,6 @@ def get_sr_tracking_summary(request, sellers_objects=None):
     # Convert QuerySet to DataFrame
     df = pd.DataFrame.from_records(query)
 
-    print(df)
-    
     return df
 
 
@@ -87,7 +88,7 @@ def enrich_sr_tracking_summary(df):
     df["type"] = df["checkout_observation"].map(lambda obs: observations_dict.get(obs, {}).get("type"))
     return df
 
-def get_monthly_tracking_percentages(df):
+def get_monthly_tracking_percentages(df, column):
     """
     Process the DataFrame to compute monthly percentages of 'failed' vs 'completed' trackings.
 
@@ -96,6 +97,9 @@ def get_monthly_tracking_percentages(df):
     df : pd.DataFrame
         Enriched DataFrame containing 'planned_date', 'checkout_observation', 'tracking_count',
         'label', and 'responsibility'.
+
+    column: str
+        Argument for grouping the data percentages
 
     Returns:
     --------
@@ -114,7 +118,7 @@ def get_monthly_tracking_percentages(df):
 
     # Group by month and type ('failed'/'completed')
     monthly_summary = (
-        df.groupby(['month', 'type', 'seller', 'responsibility'])
+        df.groupby(['month', 'type', 'seller', column])
         .agg(total_count=('tracking_count', 'sum'))
         .reset_index()
     )

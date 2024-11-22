@@ -1,4 +1,8 @@
 {% extends 'base.html' %}
+{% block custom_styles %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'dataapp/css/style.css' %}">
+{% endblock %}
 
 {% block sidebar %}
 <!-- Sidebar/menu -->
@@ -17,13 +21,55 @@
   </div>
   <div class="w3-bar-block">
 
-    <label for="start_date">Desde:</label>
-    <input type="date" name="start_date" class="w3-input" value="{{ request.GET.start_date }}">
-    <label for="end_date">Hasta:</label>
-    <input type="date" name="end_date" class="w3-input" value="{{ request.GET.end_date }}">
-    <button type="submit" class="w3-button w3-block w3-green w3-margin-top">Filtrar</button>
+    <form method="post" action="">
+      {% csrf_token %}
+      <div>
+        {{ form.start_date.label_tag }} {{ form.start_date }}
+      </div>
+      <div>
+        {{ form.end_date.label_tag }} {{ form.end_date }}
+      </div>
+      {% if usr_role %}
+      <div>
+        {{ form.sellers.label_tag }}
+        {{ form.sellers }}
+      </div>
+      {% endif %}
+      <button type="submit" class="w3-button w3-block w3-green w3-margin-top">Aplicar Filtros</button>
+    </form>
 
-    <a href="{% url 'home' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;margin-top:30px;">Home</a>
+    <!-- <form method="get" action="">
+      <label for="start_date">Desde:</label>
+      <input
+        type="date"
+        name="start_date"
+        class="w3-input"
+        value="{{ request.GET.start_date|default:'' }}"
+      />
+      <label for="end_date">Hasta:</label>
+      <input
+        type="date"
+        name="end_date"
+        class="w3-input"
+        value="{{ request.GET.end_date|default:'' }}"
+      />
+      <button type="submit" class="w3-button w3-block w3-green w3-margin-top">
+        Filtrar
+      </button>
+    </form>
+
+    <label for="sellers">Seleccionar Vendedores:</label>
+    <select name="sellers" id="sellers" class="w3-select" multiple>
+      {% for company in companies %}
+      <option value="{{ company.name }}" 
+              {% if company.name in request.GET.sellers %}selected{% endif %}>
+          {{ company.name }}
+      </option>
+    {% endfor %}
+    </select> -->
+
+    <a href="{% url 'entregas_amba' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;margin-top:30px;">entregas AMBA</a>
+    <a href="{% url 'home' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite">Home</a>
     {% if request.user.is_authenticated %}
         <a href="#" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Metricas WareHousing</a>
 

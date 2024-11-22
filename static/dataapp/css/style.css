@@ -1,0 +1,23 @@
+.custom-input, .custom-select {
+    color: white; /* Change font color */
+    background-color: #234154; /* Background color */
+    border: 1px solid #f33d30; /* Border color */
+    padding: 8px; /* Padding for better spacing */
+    font-size: 16px; /* Adjust font size */
+    border-radius: 5px; /* Rounded corners */
+}
+
+.custom-input:focus, .custom-select:focus {
+    outline: none;
+    border: 1px solid #77dd77; /* Focus border color */
+}
+
+.custom-input::placeholder, .custom-select::placeholder {
+    color: #f3f3f3; /* Placeholder color */
+}
+
+label {
+    color: antiquewhite; /* Change label text color */
+    font-weight: bold; /* Optional: Make it bold for better visibility */
+    font-size: 16px; /* Optional: Adjust the font size */
+}

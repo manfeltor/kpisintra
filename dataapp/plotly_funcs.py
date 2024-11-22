@@ -36,9 +36,6 @@ def fallidos_vs_completados_graph(df, start_date, end_date, sellers_objects=None
 
     sellers = [seller.name for seller in sellers_objects] if sellers_objects else None
 
-    print(sellers)
-    print(sellers_objects)
-
     if sellers:
         # filtered_df = filtered_df[filtered_df['seller'] == sellers]
         filtered_df = filtered_df[filtered_df['seller'].isin(sellers)]
@@ -131,6 +128,65 @@ def failed_responsibility_breakdown_graph(df, start_date, end_date, sellers_obje
     filtered_df2 = filtered_df1[filtered_df1['type'] == 'failed']
 
     pivot_table = filtered_df2.pivot(index='month', columns='responsibility', values='percentage').fillna(0)
+
+    fig = go.Figure()
+    for col in pivot_table.columns:
+        fig.add_trace(go.Bar(
+            x=pivot_table.index,
+            y=pivot_table[col],
+            name=col,
+            hoverinfo="x+y+name"
+        ))
+
+    # Update layout for better visualization
+    fig.update_layout(
+        barmode='stack',
+        title="Desambiguacion concepto fallidos",
+        xaxis_title="Mes",
+        yaxis_title="Porcentaje relativo (%)",
+        legend_title="Tipo",
+        template="plotly_white",
+        xaxis=dict(tickformat='%b %Y'),
+        margin=dict(l=40, r=40, t=40, b=40),
+        hovermode="x unified"
+    )
+
+    return fig.to_html(full_html=False)
+
+
+def failed_responsibility_desambiguation_transport(df, start_date, end_date, sellers_objects=None):
+
+    start_date = pd.to_datetime(start_date)
+    start_date = start_date.replace(tzinfo=None)
+    end_date = pd.to_datetime(end_date)
+    end_date = end_date.replace(tzinfo=None)
+
+    # Filter for the specified date range
+    filtered_df = df[
+        (df['month'] >= start_date) & 
+        (df['month'] <= end_date)
+    ]
+
+    sellers = [seller.name for seller in sellers_objects] if sellers_objects else None
+
+    # If a seller is specified, filter for that seller
+    if sellers:
+        filtered_df = filtered_df[filtered_df['seller'].isin(sellers)]
+
+    print(filtered_df)
+
+    transport_resp_labels_matrix = ["fueraDeRutaAsignada", "mercaderiaNoDespachada", "noColectado", "demorasOperativas"]
+
+    filtered_df['month'] = filtered_df['month'].dt.strftime('%Y-%m-%d')
+    # filtered_df = filtered_df[filtered_df['responsibility'] == 'transporte']
+    filtered_df = filtered_df[filtered_df['label'].isin(transport_resp_labels_matrix)]
+
+    filtered_df1 = (
+    filtered_df.groupby(['month', 'type', 'label'], as_index=False)
+    .agg({'percentage': 'sum'})
+    )
+
+    pivot_table = filtered_df1.pivot(index='month', columns='label', values='percentage').fillna(0)
 
     fig = go.Figure()
     for col in pivot_table.columns:

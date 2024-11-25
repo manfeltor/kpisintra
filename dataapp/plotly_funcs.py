@@ -154,7 +154,7 @@ def failed_responsibility_breakdown_graph(df, start_date, end_date, sellers_obje
     return fig.to_html(full_html=False)
 
 
-def failed_responsibility_desambiguation_transport(df, start_date, end_date, sellers_objects=None):
+def failed_responsibility_desambiguation_transport_vs_client(df, start_date, end_date, transport=False, sellers_objects=None):
 
     start_date = pd.to_datetime(start_date)
     start_date = start_date.replace(tzinfo=None)
@@ -173,13 +173,14 @@ def failed_responsibility_desambiguation_transport(df, start_date, end_date, sel
     if sellers:
         filtered_df = filtered_df[filtered_df['seller'].isin(sellers)]
 
-    print(filtered_df)
-
-    transport_resp_labels_matrix = ["fueraDeRutaAsignada", "mercaderiaNoDespachada", "noColectado", "demorasOperativas"]
+    if transport:
+        responsibility_labels_matrix = ["fueraDeRutaAsignada", "mercaderiaNoDespachada", "noColectado", "demorasOperativas"]
+    else:
+        responsibility_labels_matrix = ["ausente", "domicilioIncorrecto", "cancelado", "zonaPeligrosa", "rechazado"]
 
     filtered_df['month'] = filtered_df['month'].dt.strftime('%Y-%m-%d')
     # filtered_df = filtered_df[filtered_df['responsibility'] == 'transporte']
-    filtered_df = filtered_df[filtered_df['label'].isin(transport_resp_labels_matrix)]
+    filtered_df = filtered_df[filtered_df['label'].isin(responsibility_labels_matrix)]
 
     filtered_df1 = (
     filtered_df.groupby(['month', 'type', 'label'], as_index=False)

@@ -3,7 +3,7 @@ from .srtrackingDataProcessingFunctions import get_sr_tracking_summary, enrich_s
 from .srtrackingDataProcessingFunctions import get_monthly_tracking_percentages
 from django.utils.timezone import now
 from .plotly_funcs import fallidos_vs_completados_graph, failed_responsibility_breakdown_graph
-from .plotly_funcs import failed_responsibility_desambiguation_transport
+from .plotly_funcs import failed_responsibility_desambiguation_transport_vs_client
 from django.core.exceptions import ValidationError
 from datetime import datetime, timedelta
 from usersapp.models import Company, CustomUser
@@ -80,7 +80,7 @@ def entregas_amba_failed(req):
         end_date = now()
         sellers = None
 
-    df_query = get_sr_tracking_summary(req, sellers, failed=True)
+    df_query = get_sr_tracking_summary(req, sellers, failed=False)
     df_translated = enrich_sr_tracking_summary(df_query)
     relativized_df = get_monthly_tracking_percentages(df_translated, 'label')
 
@@ -90,7 +90,8 @@ def entregas_amba_failed(req):
     if isinstance(end_date, str):
         end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
 
-    gral_graph_html = failed_responsibility_desambiguation_transport(relativized_df, start_date, end_date, sellers)
+    gral_graph_html = failed_responsibility_desambiguation_transport_vs_client(relativized_df, start_date, end_date, sellers_objects=sellers, transport=True)
+    failed_graph_html = failed_responsibility_desambiguation_transport_vs_client(relativized_df, start_date, end_date, sellers_objects=sellers, transport=False)
 
 
     
@@ -101,7 +102,7 @@ def entregas_amba_failed(req):
 
     return render(req, "entregas_amba_failed.html", context={
         "gral_graph_html": gral_graph_html,
-        # "failed_graph_html": failed_graph_html,
+        "failed_graph_html": failed_graph_html,
         "companies": companies,
         "form": form,
         "usr_role": usr_role

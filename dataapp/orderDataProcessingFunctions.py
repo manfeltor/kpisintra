@@ -22,6 +22,8 @@ def query_primary_order_df(request, sellers_objects, fields=None):
     """
     tipos = ["DIST", "SUCA"]
     query = Order.objects.filter(tipo__in=tipos)
+    query = query.filter(zona="INTERIOR")
+    query = query.filter(trackingTransporte__isnull=False)
 
     user_role = request.user.role
 

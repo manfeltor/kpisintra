@@ -1,6 +1,10 @@
 import pandas as pd
-from .models import Order
+from .models import Order, Company
 from typing import List, Optional
+from .forms import FilterForm
+from django.utils.timezone import now
+from datetime import datetime, timedelta
+
 
 def get_orders_dataframe(
     fields: Optional[List[str]] = None,
@@ -87,6 +91,7 @@ def get_orders_dataframe(
     
     return df
 
+
 def calculate_relation(df, A, C):
     """
     Calculate the sum of 'C' for each 'A' value and compute the relation for each row.
@@ -117,3 +122,26 @@ def calculate_relation(df, A, C):
     df['relation'] = df[C] / df['Sum']
     
     return df
+
+
+def define_dates_and_sellers(req, form):
+
+    cutoff_date = now().date().replace(day=1) - timedelta(days=395)
+
+    if form.is_valid():
+        start_date = form.cleaned_data.get('start_date') or cutoff_date
+        end_date = form.cleaned_data.get('end_date') or now()
+        sellers = form.cleaned_data.get('sellers') or None
+
+    else:
+        start_date = cutoff_date
+        end_date = now()
+        sellers = None
+
+    # Ensure start_date and end_date are `datetime.date` objects
+    if isinstance(start_date, str):
+        start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+    if isinstance(end_date, str):
+        end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+
+    return start_date, end_date, sellers

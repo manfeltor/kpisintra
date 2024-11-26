@@ -60,6 +60,7 @@ def process_single_row(row, existing_lpns):
             order.estadoPedido = row['estadoPedido']
             order.fechaCreacion = parse_date(row['fechaCreacion'])
             order.fechaRecepcion = parse_date(row.get('fechaRecepcion', None))
+            order.tipo = row['tipo']
             order.fechaDespacho = parse_date(row.get('fechaDespacho', None))
             order.fechaEntrega = parse_date(row.get('fechaEntrega', None))
             order.estadoLpn = row['estadoLpn']
@@ -81,6 +82,7 @@ def process_single_row(row, existing_lpns):
                 estadoPedido=row['estadoPedido'],
                 fechaCreacion=parse_date(row['fechaCreacion']),
                 fechaRecepcion=parse_date(row.get('fechaRecepcion', None)),
+                tipo=row['tipo'],
                 fechaDespacho=parse_date(row.get('fechaDespacho', None)),
                 fechaEntrega=parse_date(row.get('fechaEntrega', None)),
                 lpn=row['lpn'],

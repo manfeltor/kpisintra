@@ -3,13 +3,13 @@ from .srtrackingDataProcessingFunctions import get_sr_tracking_summary, enrich_s
 from .srtrackingDataProcessingFunctions import get_monthly_tracking_percentages
 from django.utils.timezone import now
 from .plotly_funcs import fallidos_vs_completados_graph, failed_responsibility_breakdown_graph
-from .plotly_funcs import failed_responsibility_desambiguation_transport_vs_client
+from .plotly_funcs import failed_responsibility_desambiguation_transport_vs_client, create_bar_chart
 # from django.core.exceptions import ValidationError
 # from datetime import datetime, timedelta
 from usersapp.models import Company, CustomUser
 from .forms import FilterForm
 from .main_functions import define_dates_and_sellers
-from .orderDataProcessingFunctions import query_primary_order_df
+from .orderDataProcessingFunctions import query_primary_order_df_interior, enrich_primary_df_timedeltas
 
 
 def entregas_panel(req):
@@ -85,9 +85,13 @@ def entregas_amba_failed(req):
     })
 
 
-def entregas_interior_provinces(req):
+def entregas_interior(req):
 
-    companies = Company.objects.all()
+    return render(req, "entregas_interior.html")
+
+
+def entregas_interior_central_stats(req):
+
     form = FilterForm(req.POST or None)
     start_date, end_date, sellers = define_dates_and_sellers(req, form)
 
@@ -103,8 +107,28 @@ def entregas_interior_provinces(req):
         "fechaEntrega",
         "estadoLpn",
         "codigoPostal",
+        "codigoPostal__localidad",
+        "codigoPostal__partido",
+        "codigoPostal__provincia",
         ]
     
-    filtered_df = query_primary_order_df(req, sellers, delivery_interior_fields)
+    primary_df = query_primary_order_df_interior(req, sellers, start_date, end_date, delivery_interior_fields)
+    print(primary_df)
+    enriched_df = enrich_primary_df_timedeltas(primary_df, "fechaDespacho", "fechaEntrega")
+    print(enriched_df)
 
-    return render(req, "")
+    averages_by_localidad = enriched_df.groupby('codigoPostal__localidad')[['raw_delta_days', 'busy_delta_days']].mean().reset_index()
+    averages_by_partido = enriched_df.groupby('codigoPostal__partido')[['raw_delta_days', 'busy_delta_days']].mean().reset_index()
+    averages_by_provincia = enriched_df.groupby('codigoPostal__provincia')[['raw_delta_days', 'busy_delta_days']].mean().reset_index()
+
+    localidad_graph = create_bar_chart(averages_by_localidad, 'codigoPostal__localidad', ['raw_delta_days', 'busy_delta_days'], "Averages by Localidad")
+    partido_graph = create_bar_chart(averages_by_partido, 'codigoPostal__partido', ['raw_delta_days', 'busy_delta_days'], "Averages by Partido")
+    provincia_graph = create_bar_chart(averages_by_provincia, 'codigoPostal__provincia', ['raw_delta_days', 'busy_delta_days'], "Averages by Provincia")
+
+    return render(req, "entregas_interior_central_stats.html", context={
+        "localidad_graph": localidad_graph,
+        "partido_graph": partido_graph,
+        "provincia_graph": provincia_graph,
+        "form": form,
+        "usr_role": usr_role
+    })

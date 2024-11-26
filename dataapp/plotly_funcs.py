@@ -212,3 +212,23 @@ def failed_responsibility_desambiguation_transport_vs_client(df, start_date, end
     )
 
     return fig.to_html(full_html=False)
+
+
+def create_bar_chart(df, group_col, y_col, title):
+        fig = go.Figure()
+        for y in y_col:
+            fig.add_trace(go.Bar(
+                x=df[group_col],
+                y=df[y],
+                name=y,
+                hoverinfo="x+y+name"
+            ))
+        fig.update_layout(
+            barmode='group',
+            title=title,
+            xaxis_title=group_col,
+            yaxis_title="Days",
+            legend_title="Metrics",
+            template="plotly_white"
+        )
+        return fig.to_html(full_html=False)

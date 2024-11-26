@@ -4,6 +4,7 @@ from typing import List, Optional
 from .forms import FilterForm
 from django.utils.timezone import now
 from datetime import datetime, timedelta
+from numpy import busday_count
 
 
 def get_orders_dataframe(
@@ -138,6 +139,9 @@ def define_dates_and_sellers(req, form):
         end_date = now()
         sellers = None
 
+    if start_date < cutoff_date:
+        start_date = cutoff_date
+
     # Ensure start_date and end_date are `datetime.date` objects
     if isinstance(start_date, str):
         start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
@@ -145,3 +149,7 @@ def define_dates_and_sellers(req, form):
         end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
 
     return start_date, end_date, sellers
+
+
+def calculate_busy_days(start, end):
+    return busday_count(start.date(), end.date())

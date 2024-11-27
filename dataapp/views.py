@@ -4,6 +4,7 @@ from .srtrackingDataProcessingFunctions import get_monthly_tracking_percentages
 from django.utils.timezone import now
 from .plotly_funcs import fallidos_vs_completados_graph, failed_responsibility_breakdown_graph
 from .plotly_funcs import failed_responsibility_desambiguation_transport_vs_client, create_bar_chart
+from .plotly_funcs import create_filtered_chart
 # from django.core.exceptions import ValidationError
 # from datetime import datetime, timedelta
 from usersapp.models import Company, CustomUser
@@ -117,12 +118,14 @@ def entregas_interior_central_stats(req):
     enriched_df = enrich_primary_df_timedeltas(primary_df, "fechaDespacho", "fechaEntrega")
     print(enriched_df)
 
-    averages_by_localidad = enriched_df.groupby('codigoPostal__localidad')[['raw_delta_days', 'busy_delta_days']].mean().reset_index()
-    averages_by_partido = enriched_df.groupby('codigoPostal__partido')[['raw_delta_days', 'busy_delta_days']].mean().reset_index()
+    # averages_by_localidad = enriched_df.groupby('codigoPostal__localidad')[['raw_delta_days', 'busy_delta_days']].mean().reset_index()
+    averages_by_partido_localidad = enriched_df.groupby(['codigoPostal__partido', 'codigoPostal__localidad'])[['raw_delta_days', 'busy_delta_days']].mean().reset_index()
+    averages_by_provincia_partido = enriched_df.groupby(['codigoPostal__provincia', 'codigoPostal__partido'])[['raw_delta_days', 'busy_delta_days']].mean().reset_index()
     averages_by_provincia = enriched_df.groupby('codigoPostal__provincia')[['raw_delta_days', 'busy_delta_days']].mean().reset_index()
 
-    localidad_graph = create_bar_chart(averages_by_localidad, 'codigoPostal__localidad', ['raw_delta_days', 'busy_delta_days'], "Averages by Localidad")
-    partido_graph = create_bar_chart(averages_by_partido, 'codigoPostal__partido', ['raw_delta_days', 'busy_delta_days'], "Averages by Partido")
+    # localidad_graph = create_bar_chart(averages_by_localidad, 'codigoPostal__localidad', ['raw_delta_days', 'busy_delta_days'], "Averages by Localidad")
+    localidad_graph = create_filtered_chart(averages_by_partido_localidad, 'codigoPostal__partido', 'codigoPostal__localidad', ['raw_delta_days', 'busy_delta_days'], "Averages by Localidad and Partido")
+    partido_graph = create_filtered_chart(averages_by_provincia_partido, 'codigoPostal__provincia', 'codigoPostal__partido', ['raw_delta_days', 'busy_delta_days'], "Averages by Partido")
     provincia_graph = create_bar_chart(averages_by_provincia, 'codigoPostal__provincia', ['raw_delta_days', 'busy_delta_days'], "Averages by Provincia")
 
     return render(req, "entregas_interior_central_stats.html", context={

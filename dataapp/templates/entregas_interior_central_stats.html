@@ -83,24 +83,22 @@
 {% endblock %}
 
 {% block main_page %}
+{% if provincia_graph %}
+<div style="margin-top: 30px;">
+    {{ provincia_graph|safe }}
+</div>
+{% endif %}
+{% if partido_graph %}
+<div style="margin-top: 30px;">
+    {{ partido_graph|safe }}
+</div>
+{% endif %}
 {% if localidad_graph %}
-<div>
+<div style="margin-top: 30px;">
     {{ localidad_graph|safe }}
 </div>
 {% endif %}
 
-{% if partido_graph %}
-<div>
-    {{ partido_graph|safe }}
-</div>
-{% endif %}
-
-{% if provincia_graph %}
-<div>
-    {{ provincia_graph|safe }}
-</div>
-{% endif %}
-
-<a href="{% url 'entregas_amba_failed' %}" class="w3-button w3-green w3-margin-top" >Continuar a desambiguacion fallidos</a>
+<a style="margin-top: 30px;" href="{% url 'entregas_amba_failed' %}" class="w3-button w3-green w3-margin-top" >Continuar a desambiguacion fallidos</a>
 
 {% endblock %}

@@ -23,14 +23,11 @@ def query_primary_order_df_interior(request, sellers_objects, start_date, end_da
     """
     tipos = ["DIST", "SUCA"]
     query = Order.objects.filter(tipo__in=tipos)
-    print(query)
     query = query.filter(zona="INTERIOR")
     query = query.filter(trackingTransporte__isnull=False)
     query = query.filter(fechaDespacho__isnull=False)
     query = query.filter(fechaEntrega__isnull=False)
     query = query.filter(fechaDespacho__gte=start_date, fechaDespacho__lte=end_date)
-    print(query)
-    
 
     user_role = request.user.role
 
@@ -108,3 +105,148 @@ def enrich_primary_df_timedeltas(primary_df, start_col, end_col):
     )
 
     return primary_df
+
+
+def calculate_weighted_averages_with_hierarchy(enriched_df, heriarchy_col, child_col, first_col, second_col):
+    """
+    Calculate weighted averages while preserving hierarchy and child relationships.
+
+    Parameters:
+    -----------
+    enriched_df : pd.DataFrame
+        The enriched DataFrame containing data.
+    heriarchy_col : str
+        Column representing the hierarchy level (e.g., "codigoPostal__partido").
+    child_col : str
+        Column representing the child level (e.g., "codigoPostal__localidad").
+    first_col : str
+        Column representing the first metric to calculate weighted averages for (e.g., "raw_delta_days").
+    second_col : str
+        Column representing the second metric to calculate weighted averages for (e.g., "busy_delta_days").
+
+    Returns:
+    --------
+    pd.DataFrame
+        DataFrame containing weighted averages for each group, preserving hierarchy and child relationships.
+    """
+
+    # Step 1: Group by heriarchy_col and child_col to calculate counts and averages
+    grouped_df = enriched_df.groupby([heriarchy_col, child_col]).agg(
+        first_values_count=(first_col, 'count'),
+        first_values_avg=(first_col, 'mean'),
+        second_values_count=(second_col, 'count'),
+        second_values_avg=(second_col, 'mean')
+    ).reset_index()
+
+    # Step 2: Calculate weighted averages for the child level (localidad) grouped by the hierarchy level (partido)
+    grouped_df['first_weighted_avg'] = grouped_df['first_values_avg'] * grouped_df['first_values_count'] / grouped_df.groupby(heriarchy_col)['first_values_count'].transform('sum')
+    grouped_df['second_weighted_avg'] = grouped_df['second_values_avg'] * grouped_df['second_values_count'] / grouped_df.groupby(heriarchy_col)['second_values_count'].transform('sum')
+
+    # Ensure output contains the required columns for `create_filtered_chart`
+    result_df = grouped_df[[heriarchy_col, child_col, 'first_weighted_avg', 'second_weighted_avg']].copy()
+
+    # Rename columns to fit the `y_col` input for `create_filtered_chart`
+    result_df.rename(columns={
+        'first_weighted_avg': f'{first_col}_weighted',
+        'second_weighted_avg': f'{second_col}_weighted'
+    }, inplace=True)
+
+    return result_df
+
+
+def calculate_weighted_averages_higher_level(enriched_df, group_col, first_col, second_col):
+    """
+    Calculate weighted averages for the highest hierarchy level.
+
+    Parameters:
+    -----------
+    enriched_df : pd.DataFrame
+        The enriched DataFrame containing data.
+    group_col : str
+        Column representing the grouping level (e.g., "codigoPostal__provincia").
+    first_col : str
+        Column representing the first metric to calculate weighted averages for (e.g., "raw_delta_days").
+    second_col : str
+        Column representing the second metric to calculate weighted averages for (e.g., "busy_delta_days").
+
+    Returns:
+    --------
+    pd.DataFrame
+        DataFrame containing weighted averages for the highest hierarchy level.
+    """
+    grouped_df = enriched_df.groupby(group_col).agg(
+        first_values_count=(first_col, 'count'),
+        first_values_avg=(first_col, 'mean'),
+        second_values_count=(second_col, 'count'),
+        second_values_avg=(second_col, 'mean')
+    ).reset_index()
+
+    grouped_df['first_weighted_avg'] = grouped_df['first_values_avg'] * grouped_df['first_values_count'] / grouped_df['first_values_count'].sum()
+    grouped_df['second_weighted_avg'] = grouped_df['second_values_avg'] * grouped_df['second_values_count'] / grouped_df['second_values_count'].sum()
+
+    return grouped_df[[group_col, 'first_weighted_avg', 'second_weighted_avg']].rename(
+        columns={
+            'first_weighted_avg': f'{first_col}_weighted',
+            'second_weighted_avg': f'{second_col}_weighted'
+        }
+    )
+
+
+def generate_frequency_df(enriched_df):
+    """
+    Generates frequency distribution dataframes for raw_delta_days and busy_delta_days.
+    
+    Parameters:
+    enriched_df (pd.DataFrame): The dataframe containing the columns 'raw_delta_days' and 'busy_delta_days'
+    
+    Returns:
+    dict: A dictionary with two dataframes: one for raw and one for busy
+    """
+    
+    # Initialize dictionaries to hold the frequency data
+    frequency_data = {
+        'raw': [],
+        'busy': []
+    }
+
+    # Get the maximum values for raw and busy delta days across all provinces
+    max_raw_delta = enriched_df['raw_delta_days'].max()
+    max_busy_delta = enriched_df['busy_delta_days'].max()
+
+    # Group by province (codigoPostal__provincia)
+    grouped_by_province = enriched_df.groupby('codigoPostal__provincia')
+
+    for province, group in grouped_by_province:
+        # Calculate frequency distribution for raw_delta_days
+        raw_freq = group['raw_delta_days'].value_counts().sort_index()
+        
+        # Ensure the range from 0 to max_raw_delta is covered, even if there are missing values
+        raw_freq_full = raw_freq.reindex(range(0, max_raw_delta + 1), fill_value=0)
+        
+        # Append the result for raw_delta_days to the dictionary
+        for delta_day, frequency in raw_freq_full.items():
+            frequency_data['raw'].append({
+                'codigoPostal__provincia': province,
+                'raw_delta_days': delta_day,
+                'frequency': frequency
+            })
+
+        # Calculate frequency distribution for busy_delta_days
+        busy_freq = group['busy_delta_days'].value_counts().sort_index()
+        
+        # Ensure the range from 0 to max_busy_delta is covered, even if there are missing values
+        busy_freq_full = busy_freq.reindex(range(0, max_busy_delta + 1), fill_value=0)
+        
+        # Append the result for busy_delta_days to the dictionary
+        for delta_day, frequency in busy_freq_full.items():
+            frequency_data['busy'].append({
+                'codigoPostal__provincia': province,
+                'busy_delta_days': delta_day,
+                'frequency': frequency
+            })
+
+    # Convert the frequency data into separate DataFrames
+    raw_df = pd.DataFrame(frequency_data['raw'])
+    busy_df = pd.DataFrame(frequency_data['busy'])
+
+    return raw_df, busy_df

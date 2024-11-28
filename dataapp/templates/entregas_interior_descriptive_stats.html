@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block custom_styles %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'dataapp/css/style.css' %}">
+{% endblock %}
+
+{% block sidebar %}
+<!-- Sidebar/menu -->
+<nav class="w3-sidebar w3-collapse w3-top w3-large w3-padding" style="z-index:3;width:300px;font-weight:bold;background-color: #234154;" id="mySidebar"><br>
+  {% if request.user.is_authenticated %}
+  <div class="w3-bar-item" style="margin-left: 15px;">
+    <span style="color: antiquewhite;">Bienvenido <strong>{{ request.user.username }}</strong></span><br>
+  </div>
+  <button class="w3-bar-item w3-button w3-left login-btn " style="margin-bottom:10px;color:#f33d30;" onclick="showLogoutModal()">Logout</button>
+  {% else %}
+  <button class="w3-bar-item w3-button w3-left login-btn " style="margin-bottom:10px;color:#f33d30;" onclick="document.getElementById('loginModal').style.display='block'">Login</button>
+  {% endif %}
+  <a href="javascript:void(0)" onclick="w3_close()" class="w3-button w3-hide-large w3-display-topleft" style="width:100%;font-size:22px">Close Menu</a>
+  <div class="w3-container">
+    <h3 style="color:azure;"><b>INTRALOG<br>Metrics</b></h3>
+  </div>
+  <div class="w3-bar-block">
+
+    <form method="post" action="">
+      {% csrf_token %}
+      <div>
+        {{ form.start_date.label_tag }} {{ form.start_date }}
+      </div>
+      <div>
+        {{ form.end_date.label_tag }} {{ form.end_date }}
+      </div>
+      {% if usr_role %}
+      <div>
+        {{ form.sellers.label_tag }}
+        {{ form.sellers }}
+      </div>
+      {% endif %}
+      <button type="submit" class="w3-button w3-block w3-green w3-margin-top">Aplicar Filtros</button>
+    </form>
+
+    <a href="{% url 'entregas_amba' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;margin-top:30px;">regresa a entregas AMBA</a>
+    <a href="{% url 'home' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite">Home</a>
+    {% if request.user.is_authenticated %}
+        <a href="#" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;">Metricas WareHousing</a>
+
+      {% if request.user.is_management or request.user.is_superuser %}
+      <a href="{% url 'adminpanel' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: #f33d30;">Admin Panel</a>
+      {% endif %}
+      {% if request.user.is_superuser %}
+      {% endif %}
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block main_page %}
+<div>
+    <h2>Cumulative Distribution</h2>
+    {{ chart|safe }}
+</div>
+{% endblock %}

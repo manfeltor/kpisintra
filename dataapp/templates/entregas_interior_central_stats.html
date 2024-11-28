@@ -99,6 +99,43 @@
 </div>
 {% endif %}
 
+<!-- <div class="accordion">
+  <button class="accordion-button" onclick="toggleAccordion('raw-stats')">Raw Central Statistics</button>
+  <div id="raw-stats" class="accordion-content">
+    {% if localidad_graph %}
+      <div>{{ localidad_graph|safe }}</div>
+    {% endif %}
+    {% if partido_graph %}
+      <div>{{ partido_graph|safe }}</div>
+    {% endif %}
+    {% if provincia_graph %}
+      <div>{{ provincia_graph|safe }}</div>
+    {% endif %}
+  </div> -->
+
+  <!-- <button class="accordion-button" onclick="toggleAccordion('weighted-stats')">Weighted Central Statistics</button>
+  <div id="weighted-stats" class="accordion-content">
+    {% if weighted_localidad_graph %}
+      <div>{{ weighted_localidad_graph|safe }}</div>
+    {% endif %}
+    {% if weighted_partido_graph %}
+      <div>{{ weighted_partido_graph|safe }}</div>
+    {% endif %}
+    {% if weighted_provincia_graph %}
+      <div>{{ weighted_provincia_graph|safe }}</div>
+    {% endif %}
+  </div>
+</div> -->
+
 <a style="margin-top: 30px;" href="{% url 'entregas_amba_failed' %}" class="w3-button w3-green w3-margin-top" >Continuar a desambiguacion fallidos</a>
 
 {% endblock %}
+
+<script>
+  function toggleAccordion(id) {
+  const content = document.getElementById(id);
+  const isVisible = content.style.display === 'block';
+  document.querySelectorAll('.accordion-content').forEach(c => c.style.display = 'none'); // Close all
+  content.style.display = isVisible ? 'none' : 'block'; // Toggle visibility
+  }
+</script>

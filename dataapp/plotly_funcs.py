@@ -1,6 +1,5 @@
 import plotly.graph_objects as go
 import pandas as pd
-from .main_functions import calculate_relation
 
 def fallidos_vs_completados_graph(df, start_date, end_date, sellers_objects=None):
     """
@@ -260,7 +259,7 @@ def create_bar_chart(df, group_col, y_col, title):
     return fig.to_html(full_html=False)
 
 
-def create_filtered_chart(df, group_col, sub_group_col, y_col, title):
+def create_filtered_chart(df, group_col, sub_group_col, y_col, title, raws_col="raw_delta_days", busy_col='busy_delta_days'):
     partidos = df[group_col].unique()
 
     fig = go.Figure()
@@ -278,13 +277,13 @@ def create_filtered_chart(df, group_col, sub_group_col, y_col, title):
             ))
 
     # Calculate general stats for "All Partidos"
-    general_avg_raw = df['raw_delta_days'].mean()
-    general_cv_raw = df['raw_delta_days'].std() / general_avg_raw * 100 if general_avg_raw else 0
-    general_mode_raw = df['raw_delta_days'].mode().iloc[0] if not df['raw_delta_days'].mode().empty else "N/A"
+    general_avg_raw = df[raws_col].mean()
+    general_cv_raw = df[raws_col].std() / general_avg_raw * 100 if general_avg_raw else 0
+    general_mode_raw = df[raws_col].mode().iloc[0] if not df[raws_col].mode().empty else "N/A"
 
-    general_avg_busy = df['busy_delta_days'].mean()
-    general_cv_busy = df['busy_delta_days'].std() / general_avg_busy * 100 if general_avg_busy else 0
-    general_mode_busy = df['busy_delta_days'].mode().iloc[0] if not df['busy_delta_days'].mode().empty else "N/A"
+    general_avg_busy = df[busy_col].mean()
+    general_cv_busy = df[busy_col].std() / general_avg_busy * 100 if general_avg_busy else 0
+    general_mode_busy = df[busy_col].mode().iloc[0] if not df[busy_col].mode().empty else "N/A"
 
     # Create a default annotation for "All Partidos"
     annotation_text = (
@@ -330,13 +329,13 @@ def create_filtered_chart(df, group_col, sub_group_col, y_col, title):
     # Add dropdown options for each partido
     for partido in partidos:
         filtered_df = df[df[group_col] == partido]
-        avg_raw = filtered_df['raw_delta_days'].mean()
-        cv_raw = filtered_df['raw_delta_days'].std() / avg_raw * 100 if avg_raw else 0
-        mode_raw = filtered_df['raw_delta_days'].mode().iloc[0] if not filtered_df['raw_delta_days'].mode().empty else "N/A"
+        avg_raw = filtered_df[raws_col].mean()
+        cv_raw = filtered_df[raws_col].std() / avg_raw * 100 if avg_raw else 0
+        mode_raw = filtered_df[raws_col].mode().iloc[0] if not filtered_df[raws_col].mode().empty else "N/A"
 
-        avg_busy = filtered_df['busy_delta_days'].mean()
-        cv_busy = filtered_df['busy_delta_days'].std() / avg_busy * 100 if avg_busy else 0
-        mode_busy = filtered_df['busy_delta_days'].mode().iloc[0] if not filtered_df['busy_delta_days'].mode().empty else "N/A"
+        avg_busy = filtered_df[busy_col].mean()
+        cv_busy = filtered_df[busy_col].std() / avg_busy * 100 if avg_busy else 0
+        mode_busy = filtered_df[busy_col].mode().iloc[0] if not filtered_df[busy_col].mode().empty else "N/A"
 
         partido_annotation_text = (
             f"General Avg, CV & Mode:<br>"
@@ -390,3 +389,5 @@ def create_filtered_chart(df, group_col, sub_group_col, y_col, title):
     )
 
     return fig.to_html(full_html=False)
+
+

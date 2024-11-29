@@ -1,9 +1,9 @@
 import pandas as pd
 from .models import Order
 from usersapp.models import CustomUser
-from .main_functions import calculate_busy_days
+from .main_functions import calculate_busy_days, strip_last_n_percent
 
-def query_primary_order_df_interior(request, sellers_objects, start_date, end_date, fields=None):
+def query_primary_order_df_interior(request, sellers_objects, start_date, end_date, fields=None, amba=False, suca=False):
     """
     Query the primary order data based on user role and seller filters, dynamically fetching fields.
 
@@ -21,9 +21,15 @@ def query_primary_order_df_interior(request, sellers_objects, start_date, end_da
     pd.DataFrame
         DataFrame containing the queried order data.
     """
-    tipos = ["DIST", "SUCA"]
+    if suca:
+        tipos = ["DIST", "SUCA"]
+    else:
+        tipos = ["DIST"]
     query = Order.objects.filter(tipo__in=tipos)
-    query = query.filter(zona="INTERIOR")
+    if amba:
+        query = query.filter(zona="AMBA")
+    else:
+        query = query.filter(zona="INTERIOR")
     query = query.filter(trackingTransporte__isnull=False)
     query = query.filter(fechaDespacho__isnull=False)
     query = query.filter(fechaEntrega__isnull=False)
@@ -192,7 +198,7 @@ def calculate_weighted_averages_higher_level(enriched_df, group_col, first_col, 
     )
 
 
-def generate_frequency_df(enriched_df):
+def generate_frequency_df(enriched_df, grouped_df=True, strip_percentage=0.08):
     """
     Generates frequency distribution dataframes for raw_delta_days and busy_delta_days.
     
@@ -246,7 +252,25 @@ def generate_frequency_df(enriched_df):
             })
 
     # Convert the frequency data into separate DataFrames
-    raw_df = pd.DataFrame(frequency_data['raw'])
-    busy_df = pd.DataFrame(frequency_data['busy'])
+    raw_df_0 = pd.DataFrame(frequency_data['raw'])
+    busy_df_0 = pd.DataFrame(frequency_data['busy'])
+    if grouped_df:
+        raw_df_0 = raw_df_0.groupby('raw_delta_days', as_index=False)['frequency'].sum()
+        busy_df_0 = busy_df_0.groupby('busy_delta_days', as_index=False)['frequency'].sum()
+    raw_df_1 = strip_last_n_percent(raw_df_0, 'raw_delta_days', 'frequency', strip_percentage)
+    busy_df_1 = strip_last_n_percent(busy_df_0, 'busy_delta_days', 'frequency', strip_percentage)
+    raw_df = raw_df_1[raw_df_1['frequency'] != 0]
+    busy_df = busy_df_1[busy_df_1['frequency'] != 0]
 
     return raw_df, busy_df
+
+
+def relativize_by_binary_value(df, binary_col, value_col):
+
+    df['province_total'] = df.groupby('province')['pedido'].transform('sum')
+
+    # Step 2: Calculate the percentage for each tipo within each province
+    df['percentage'] = (df['pedido'] / df['province_total']) * 100
+
+    # Step 3: Drop the intermediate total column (optional)
+    df.drop(columns=['province_total'], inplace=True)

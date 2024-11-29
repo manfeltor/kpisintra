@@ -391,3 +391,208 @@ def create_filtered_chart(df, group_col, sub_group_col, y_col, title, raws_col="
     return fig.to_html(full_html=False)
 
 
+def plot_cumulative_percentage(df1, col1, df2, col2):
+    """
+    Plots a line graph for cumulative_percentage vs. raw_delta_days (for df1) and busy_delta_days (for df2).
+    Fills the area under the curve.
+    
+    Parameters:
+    - df1: First DataFrame containing raw_delta_days and cumulative_percentage.
+    - df2: Second DataFrame containing busy_delta_days and cumulative_percentage.
+    - col1: The name of the column in df1 representing the x-axis values (e.g., 'raw_delta_days').
+    - col2: The name of the column in df2 representing the x-axis values (e.g., 'busy_delta_days').
+    """
+    
+    # Sort both DataFrames by their respective x-axis columns (if not already sorted)
+    df1 = df1.sort_values(by=col1)
+    df2 = df2.sort_values(by=col2)
+    
+    # Create the plot
+    fig = go.Figure()
+    
+    # Add the first line (raw_delta_days vs cumulative_percentage)
+    fig.add_trace(go.Scatter(
+        x=df1[col1], y=df1['cumulative_percentage'], 
+        mode='lines', 
+        name='Raw Delta Days', 
+        fill='tozeroy',  # Fills the area under the line
+        fillcolor='rgba(0, 100, 255, 0.3)',  # Semi-transparent blue
+        line=dict(color='blue')
+    ))
+    
+    # Add the second line (busy_delta_days vs cumulative_percentage)
+    fig.add_trace(go.Scatter(
+        x=df2[col2], y=df2['cumulative_percentage'], 
+        mode='lines', 
+        name='Busy Delta Days', 
+        fill='tozeroy',  # Fills the area under the line
+        fillcolor='rgba(255, 100, 0, 0.3)',  # Semi-transparent orange
+        line=dict(color='orange')
+    ))
+    
+    # Customize layout
+    fig.update_layout(
+        title='Cumulative Percentage by Days',
+        xaxis_title='Days',
+        yaxis_title='Cumulative Percentage',
+        template='plotly_white'  # Optional: dark mode styling
+    )
+    
+    return fig.to_html(full_html=False)
+
+
+def plot_box_plots(raw_df, raw_col, busy_df, busy_col):
+    """
+    Plots horizontal box plots for raw_delta_days and busy_delta_days based on frequency.
+    
+    Parameters:
+    - raw_df: The DataFrame with raw_delta_days and corresponding frequencies.
+    - raw_col: The column name for the raw data.
+    - busy_df: The DataFrame with busy_delta_days and corresponding frequencies.
+    - busy_col: The column name for the busy data.
+    
+    Returns:
+    - Plotly horizontal box plot figure.
+    """
+    # Prepare data for box plot
+    raw_data = raw_df[raw_col]
+    busy_data = busy_df[busy_col]
+    
+    # Create the figure
+    fig = go.Figure()
+    
+    # Add horizontal box plot for raw_delta_days
+    fig.add_trace(go.Box(
+        x=raw_data,  # Plot raw data along x-axis
+        name="Raw Delta Days",
+        boxmean='sd',  # Show mean and standard deviation
+        marker=dict(color='blue'),
+        orientation='h'  # Horizontal box plot
+    ))
+    
+    # Add horizontal box plot for busy_delta_days
+    fig.add_trace(go.Box(
+        x=busy_data,  # Plot busy data along x-axis
+        name="Busy Delta Days",
+        boxmean='sd',  # Show mean and standard deviation
+        marker=dict(color='orange'),
+        orientation='h'  # Horizontal box plot
+    ))
+
+    # Update layout with titles and labels
+    fig.update_layout(
+        title="Horizontal Box Plot of Raw vs. Busy Delta Days",
+        xaxis_title="Frequency",  # X-axis now represents frequency
+        yaxis_title="Day Type",    # Y-axis represents the type of days (Raw or Busy)
+        template='plotly_white'
+    )
+    
+    return fig.to_html(full_html=False)
+
+
+def plot_relative_volume_bar(df, province_col, order_col):
+    """
+    Plots a bar chart for relative volume of orders per province as percentages.
+    
+    Parameters:
+    - df (pandas.DataFrame): The dataframe with 'codigoPostal__provincia' and 'relative_percentage' columns.
+    - province_col (str): The column name for provinces (e.g., 'codigoPostal__provincia').
+    - order_col (str): The column name for relative percentages (e.g., 'relative_percentage').
+    
+    Returns:
+    - Plotly bar chart figure.
+    """
+    # Prepare data for the bar plot
+    provinces = df[province_col]
+    relative_percentages = df[order_col]
+    
+    # Create the figure
+    fig = go.Figure()
+
+    # Add a bar plot for the relative percentages of orders
+    fig.add_trace(go.Bar(
+        x=provinces,  # Provinces on x-axis
+        y=relative_percentages,  # Relative percentages on y-axis
+        marker=dict(color='royalblue'),
+        name="Relative Volume of Orders"
+    ))
+
+    # Update layout with titles and labels
+    fig.update_layout(
+        title="Relative Volume of Orders by Province",
+        xaxis_title="Province",
+        yaxis_title="Relative Percentage (%)",
+        template='plotly_white',
+        xaxis_tickangle=45  # Rotate x-axis labels for readability
+    )
+    
+    return fig.to_html(full_html=False)
+
+
+def plot_tipo_percentage_bar_chart(df, province_col, tipo_col, percentage_col):
+    """
+    Creates a grouped bar chart comparing percentages of DIST and SUCA for each province,
+    with average annotations.
+
+    Parameters:
+    - df: DataFrame containing the data.
+    - province_col: Column name for provinces.
+    - tipo_col: Column name for tipo (DIST, SUCA).
+    - percentage_col: Column name for percentages.
+
+    Returns:
+    - Plotly figure in HTML format.
+    """
+    # Separate data for DIST and SUCA
+    dist_df = df[df[tipo_col] == "DIST"]
+    suca_df = df[df[tipo_col] == "SUCA"]
+    
+    # Calculate averages
+    avg_dist = dist_df[percentage_col].mean()
+    avg_suca = suca_df[percentage_col].mean()
+    
+    # Create the plot
+    fig = go.Figure()
+    
+    # Add bar for DIST
+    fig.add_trace(go.Bar(
+        x=dist_df[province_col],
+        y=dist_df[percentage_col],
+        name="DIST",
+        marker=dict(color="blue")
+    ))
+    
+    # Add bar for SUCA
+    fig.add_trace(go.Bar(
+        x=suca_df[province_col],
+        y=suca_df[percentage_col],
+        name="SUCA",
+        marker=dict(color="orange")
+    ))
+    
+    # Add average annotations
+    avg_text = (
+        f"Avg DIST: {avg_dist:.2f}%<br>"
+        f"Avg SUCA: {avg_suca:.2f}%"
+    )
+    fig.add_annotation(
+        text=avg_text,
+        xref="paper", yref="paper",
+        x=0.5, y=1.15,  # Centered above the graph
+        showarrow=False,
+        font=dict(size=12),
+        align="center"
+    )
+    
+    # Update layout
+    fig.update_layout(
+        barmode="group",  # Grouped bar chart
+        title="Percentage Comparison of DIST and SUCA by Province",
+        xaxis_title="Province",
+        yaxis_title="Percentage",
+        legend_title="Tipo",
+        template="plotly_white",
+        margin=dict(t=100)  # Adjust margin for annotation space
+    )
+    
+    return fig.to_html(full_html=False)

@@ -153,3 +153,111 @@ def define_dates_and_sellers(req, form):
 
 def calculate_busy_days(start, end):
     return busday_count(start.date(), end.date())
+
+
+def strip_last_n_percent(df, value_col, frequency_col, strip_percentage):
+    """
+    Strips a specified percentage of the total frequency from the given DataFrame, 
+    starting from the highest values of the `value_col` and adjusting the frequencies
+    in the `frequency_col`. This is useful when you want to remove the "top" frequency 
+    counts in a frequency distribution.
+
+    Parameters:
+    - df (pandas.DataFrame): The input DataFrame containing the frequency data.
+    - value_col (str): The column name representing the values (e.g., 'n', 'days').
+    - frequency_col (str): The column name representing the frequencies to be stripped.
+    - strip_percentage (float): The percentage of the total frequency to remove (e.g., 0.11 for 11%).
+
+    Returns:
+    - pandas.DataFrame: The modified DataFrame with the frequencies adjusted.
+
+    Procedure:
+    1. Calculates the total sum of the frequencies in the `frequency_col`.
+    2. Determines how much frequency (in the form of a value) to strip based on the `strip_percentage`.
+    3. Iterates through the DataFrame starting from the highest values in `value_col` (sorted in descending order).
+    4. Reduces the frequencies from the rows with the largest `value_col` until the total stripped amount is reached.
+       - If the current frequency is greater than or equal to the remaining amount to strip, it is reduced accordingly.
+       - If the frequency is smaller than the remaining amount to strip, it is set to 0, and the remaining strip amount is reduced by that frequency.
+    5. Stops when the required amount has been stripped from the DataFrame.
+
+    Example:
+    >>> data = {'n': [20, 19, 18, 17, 16], 'frequency': [10, 60, 150, 200, 500]}
+    >>> df = pd.DataFrame(data)
+    >>> strip_last_n_percent(df, 'n', 'frequency', 0.11)
+
+    This will strip 11% of the total frequencies, starting from the largest `n` values.
+    """
+
+    # Step 1: Calculate the total frequency
+    total_frequency = df[frequency_col].sum()
+
+    # Step 2: Calculate 11% of the total frequency
+    percentage_to_strip = total_frequency * strip_percentage
+
+    # Step 3: Iterate through the DataFrame from max 'n' down to 0 and subtract from frequencies
+    remaining_to_strip = percentage_to_strip
+
+    for index, row in df.sort_values(by=value_col, ascending=False).iterrows():
+        if remaining_to_strip == 0:
+            break
+
+        # If current frequency is greater than or equal to the remaining amount to strip
+        if row[frequency_col] >= remaining_to_strip:
+            df.at[index, frequency_col] = row[frequency_col] - remaining_to_strip
+            remaining_to_strip = 0
+        else:
+            # If the current frequency is less than the remaining to strip, set it to 0
+            df.at[index, frequency_col] = 0
+            remaining_to_strip -= row[frequency_col]
+    
+    return df
+
+
+def add_cumulative_percentage(df, value_col, frequency_col):
+    """
+    Adds cumulative and cumulative percentage columns to a DataFrame.
+
+    Parameters:
+    - df (pandas.DataFrame): The input DataFrame with values and frequencies.
+    - value_col (str): The column name representing the values (e.g., 'n', 'days').
+    - frequency_col (str): The column name representing the frequencies.
+
+    Returns:
+    - pandas.DataFrame: The modified DataFrame with the cumulative and cumulative_percentage columns.
+    """
+
+    # Step 1: Sort the DataFrame by the value column in ascending order
+    df_sorted = df.sort_values(by=value_col, ascending=True)
+
+    # Step 2: Calculate the cumulative sum of the frequencies
+    df_sorted['cumulative'] = df_sorted[frequency_col].cumsum()
+
+    # Step 3: Calculate the cumulative percentage based on the total frequency
+    total_frequency = df_sorted[frequency_col].sum()
+    df_sorted['cumulative_percentage'] = (df_sorted['cumulative'] / total_frequency) * 100
+    df_sorted['cumulative_percentage'].iloc[-2:] = df_sorted['cumulative_percentage'].iloc[-2:].astype(int)
+    df_sorted['cumulative_percentage'] = df_sorted['cumulative_percentage'].replace(100, 99)
+
+    return df_sorted
+
+
+def add_relative_percentage(df, order_col):
+    """
+    Adds a column to the dataframe that represents the relative percentage of orders
+    for each province based on the total number of orders.
+    
+    Parameters:
+    - df (pandas.DataFrame): The dataframe containing the 'codigoPostal__provincia' and 'pedido' columns.
+    - order_col (str): The column name representing the number of orders (e.g., 'pedido').
+    
+    Returns:
+    - pandas.DataFrame: The dataframe with an additional 'relative_percentage' column.
+    """
+    # Calculate total orders
+    total_orders = df[order_col].sum()
+
+    # Add a new column for the relative percentage of orders for each province
+    df['relative_percentage'] = (df[order_col] / total_orders) * 100
+    df1 = df.sort_values(by='relative_percentage', ascending=True)
+    
+    return df1

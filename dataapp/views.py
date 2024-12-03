@@ -1,20 +1,19 @@
 from django.shortcuts import render
 from .srtrackingDataProcessingFunctions import get_sr_tracking_summary, enrich_sr_tracking_summary
 from .srtrackingDataProcessingFunctions import get_monthly_tracking_percentages
-from django.utils.timezone import now
 from .plotly_funcs import fallidos_vs_completados_graph, failed_responsibility_breakdown_graph
 from .plotly_funcs import failed_responsibility_desambiguation_transport_vs_client, create_bar_chart
 from .plotly_funcs import create_filtered_chart, plot_cumulative_percentage, plot_box_plots, plot_relative_volume_bar
 from .plotly_funcs import plot_tipo_percentage_bar_chart
-# from django.core.exceptions import ValidationError
-# from datetime import datetime, timedelta
 from usersapp.models import Company, CustomUser
 from .forms import FilterForm
 from .main_functions import define_dates_and_sellers, add_cumulative_percentage, add_relative_percentage
+from .main_functions import filter_df_date_range
 from .orderDataProcessingFunctions import query_primary_order_df_interior, enrich_primary_df_timedeltas
 from .orderDataProcessingFunctions import generate_frequency_df
-# from .orderDataProcessingFunctions import calculate_weighted_averages_with_hierarchy, calculate_weighted_averages_higher_level
-
+from io import BytesIO
+import pandas as pd
+from django.http import HttpResponse
 
 def entregas_panel(req):
     return render(req, "kpisentregas.html")
@@ -33,7 +32,7 @@ def entregas_amba_gral(req):
 
     start_date, end_date, sellers = define_dates_and_sellers(req, form)
 
-    df_query = get_sr_tracking_summary(req, sellers)
+    df_query = get_sr_tracking_summary(req, sellers, False, start_date, end_date)
     df_translated = enrich_sr_tracking_summary(df_query)
     relativized_df = get_monthly_tracking_percentages(df_translated, "responsibility")    
 
@@ -54,6 +53,62 @@ def entregas_amba_gral(req):
     })
 
 
+def download_entregas_amba_gral(req):
+
+    if req.user.role == CustomUser.CLIENT:
+        usr_role = None
+    else:
+        usr_role = 1
+
+    start_date = req.GET.get('start_date')
+    if start_date == 'None' or not start_date:
+        start_date = None
+
+    end_date = req.GET.get('end_date')
+    if end_date == 'None' or not end_date:
+        end_date = None
+
+    if usr_role:
+        sellers = req.GET.getlist('sellers')
+        if not sellers:
+            sellers = None
+    else:
+        sellers = [req.user.company]
+
+
+    # Fetch and process the data
+    df_query = get_sr_tracking_summary(req, sellers, False, start_date, end_date)
+    df_translated = enrich_sr_tracking_summary(df_query)
+    relativized_df = get_monthly_tracking_percentages(df_translated, "responsibility")
+    relativized_df.drop(columns='total_count', inplace=True)
+
+    # Prepare the output
+    output = BytesIO()
+
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        # Write the main data
+        relativized_df.to_excel(writer, index=False, sheet_name='responsibility_matrix')
+
+        # Add a sheet for filters
+        filter_summary = {
+            'Filter': ['Start Date', 'End Date', 'Selected Sellers'],
+            'Value': [start_date or 'Not Applied', end_date or 'Not Applied', ', '.join(sellers) if sellers else 'All Sellers']
+        }
+        filter_df = pd.DataFrame(filter_summary)
+        filter_df.to_excel(writer, index=False, sheet_name='filters')
+
+    output.seek(0)
+
+    # Prepare the response
+    response = HttpResponse(
+        output,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="responsibility_matrix.xlsx"'
+
+    return response
+
+
 def entregas_amba_failed(req):
 
     companies = Company.objects.all()
@@ -62,7 +117,7 @@ def entregas_amba_failed(req):
 
     start_date, end_date, sellers = define_dates_and_sellers(req, form)
 
-    df_query = get_sr_tracking_summary(req, sellers, failed=False)
+    df_query = get_sr_tracking_summary(req, sellers, failed=False, start_date=start_date, end_date=end_date)
     df_translated = enrich_sr_tracking_summary(df_query)
     relativized_df = get_monthly_tracking_percentages(df_translated, 'label')
 
@@ -81,6 +136,62 @@ def entregas_amba_failed(req):
         "form": form,
         "usr_role": usr_role
     })
+
+
+def download_entregas_amba_failed(req):
+
+    if req.user.role == CustomUser.CLIENT:
+        usr_role = None
+    else:
+        usr_role = 1
+
+    start_date = req.GET.get('start_date')
+    if start_date == 'None' or not start_date:
+        start_date = None
+
+    end_date = req.GET.get('end_date')
+    if end_date == 'None' or not end_date:
+        end_date = None
+
+    if usr_role:
+        sellers = req.GET.getlist('sellers')
+        if not sellers:
+            sellers = None
+    else:
+        sellers = [req.user.company]
+
+
+    # Fetch and process the data
+    df_query = get_sr_tracking_summary(req, sellers, True, start_date, end_date)
+    df_translated = enrich_sr_tracking_summary(df_query)
+    relativized_df = get_monthly_tracking_percentages(df_translated, "label")
+    relativized_df.drop(columns='total_count', inplace=True)
+
+    # Prepare the output
+    output = BytesIO()
+
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        # Write the main data
+        relativized_df.to_excel(writer, index=False, sheet_name='responsibility_matrix')
+
+        # Add a sheet for filters
+        filter_summary = {
+            'Filter': ['Start Date', 'End Date', 'Selected Sellers'],
+            'Value': [start_date or 'Not Applied', end_date or 'Not Applied', ', '.join(sellers) if sellers else 'All Sellers']
+        }
+        filter_df = pd.DataFrame(filter_summary)
+        filter_df.to_excel(writer, index=False, sheet_name='filters')
+
+    output.seek(0)
+
+    # Prepare the response
+    response = HttpResponse(
+        output,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="failed_matrix.xlsx"'
+
+    return response
 
 
 def entregas_amba_descr(req):
@@ -114,8 +225,6 @@ def entregas_amba_descr(req):
     grouped_volume_localidad_df = primary_df.groupby(["codigoPostal__localidad", "codigoPostal__partido"], as_index=False)["pedido"].count()
     grouped_volume_localidad_df['percentage'] = grouped_volume_localidad_df.groupby('codigoPostal__partido')['pedido'].transform(lambda x: (x / x.sum()) * 100)
     filtered_df = grouped_volume_localidad_df[grouped_volume_localidad_df['codigoPostal__localidad'] == 'CIUDAD AUTONOMA DE BUENOS AIRES']
-    print(filtered_df)
-
 
     if req.user.role == CustomUser.CLIENT:
         usr_role = None

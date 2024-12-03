@@ -5,52 +5,59 @@ from datetime import datetime, timedelta
 from django.utils.timezone import now
 from usersapp.models import CustomUser
 
-def get_sr_tracking_summary(request, sellers_objects=None, failed=False):
+def get_sr_tracking_summary(request, sellers_objects=None, failed=False, start_date=None, end_date=None):
     """
-    Query the SRTrackingData model to summarize the number of trackings grouped by
-    planned_date, checkout_observation, and seller. Limit to the last 12 months and return
-    the result as a pandas DataFrame.
-    
+    Query the SRTrackingData model to summarize trackings grouped by date, observation, and seller.
+
     Parameters:
     -----------
     request : HttpRequest
         The Django request object to access user details.
-    seller : str, optional
-        The seller name to filter data. Defaults to None.
+    sellers_objects : list or QuerySet, optional
+        Sellers to filter by.
+    failed : bool, optional
+        Whether to filter for failed statuses. Defaults to False.
+    start_date : str or None, optional
+        Start date for filtering. Defaults to None.
+    end_date : str or None, optional
+        End date for filtering. Defaults to None.
 
     Returns:
     --------
     pd.DataFrame
-        DataFrame with columns: planned_date, checkout_observation, seller, tracking_count
+        DataFrame with columns: planned_date, checkout_observation, seller, tracking_count.
     """
-    # Calculate the cutoff date for 12 months ago
     cutoff_date = now().date().replace(day=1) - timedelta(days=395)
-    # cutoff_date = now().date().replace(day=1)
 
-    # ORM query, filtered for the last 12 months
-    user_role = request.user.role
+    # print(type(start_date))
+    
+    if start_date == None:
+        query = SRTrackingData.objects.filter(planned_date__gte=cutoff_date)
+    else:
+        query = SRTrackingData.objects.filter(planned_date__gte=start_date)
 
-    # if user_role == CustomUser.CLIENT:
-    query = SRTrackingData.objects.filter(planned_date__gte=cutoff_date)
+    if end_date:
+        query = query.filter(planned_date__lte=end_date)
+
     query = query.filter(tipo="DIST")
 
     if failed:
         query = query.filter(status='failed')
 
+    user_role = request.user.role
     if user_role == CustomUser.CLIENT:
         seller = request.user.company
         query = query.filter(seller=seller)
     elif sellers_objects:
         sellers = [seller.name for seller in sellers_objects] if sellers_objects else None
         query = query.filter(seller__in=sellers)
-        
+    
     query = query.values(
-            'planned_date', 'checkout_observation', 'seller'
-        ).annotate(
-            tracking_count=Count('tracking_id')
-        ).order_by('planned_date', 'checkout_observation', 'seller')
-        
-    # Convert QuerySet to DataFrame
+        'planned_date', 'checkout_observation', 'seller'
+    ).annotate(
+        tracking_count=Count('tracking_id')
+    ).order_by('planned_date', 'checkout_observation', 'seller')
+
     df = pd.DataFrame.from_records(query)
 
     return df

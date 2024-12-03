@@ -261,3 +261,25 @@ def add_relative_percentage(df, order_col):
     df1 = df.sort_values(by='relative_percentage', ascending=True)
     
     return df1
+
+def filter_df_date_range(df, date_col, start_date, end_date):
+    """
+    Filters a DataFrame to include rows where the date in `date_col` 
+    is within the range specified by `start_date` and `end_date`.
+
+    Parameters:
+    - df (pd.DataFrame): The input DataFrame to filter.
+    - date_col (str): The name of the column containing date values.
+    - start_date (str or pd.Timestamp): The start of the date range (inclusive).
+    - end_date (str or pd.Timestamp): The end of the date range (inclusive).
+
+    Returns:
+    - pd.DataFrame: A filtered DataFrame containing rows within the specified date range.
+    """
+    # Ensure the date column is in datetime format
+    df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
+
+    # Filter the DataFrame based on the date range
+    filtered_df = df[(df[date_col] >= pd.to_datetime(start_date)) & (df[date_col] <= pd.to_datetime(end_date))]
+
+    return filtered_df

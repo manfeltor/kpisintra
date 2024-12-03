@@ -83,17 +83,27 @@
 {% endblock %}
 
 {% block main_page %}
-{% if gral_graph_html %}
-    <div style="margin-top:50px">
-        {{ gral_graph_html|safe }}
-    </div>
-{% endif %}
-{% if failed_graph_html %}
-    <div style="margin-top:50px; margin-bottom: 50px;">
-        {{ failed_graph_html|safe }}
-    </div>
-{% endif %}
+  {% if gral_graph_html %}
+      <div style="margin-top:50px">
+          {{ gral_graph_html|safe }}
+      </div>
+  {% endif %}
+  {% if failed_graph_html %}
+      <div style="margin-top:50px; margin-bottom: 50px;">
+          {{ failed_graph_html|safe }}
+      </div>
+  {% endif %}
+  <div class="w3-container" id="ambadiv" style="margin-top:50px; margin-bottom: 70px;">
+    <h1 class="w3-xxxlarge w3-text-red"><b>Descarga Excel</b></h1>
+    <hr style="width:50px;border:5px solid #f33d30" class="w3-round">
+    <p>Descarga la matriz de datos de este dashboard como una tabla de excel.</p>
+    <a href="{% url 'download_entregas_amba_gral' %}{% if form.start_date.value %}?start_date={{ form.start_date.value }}{% endif %}{% if form.end_date.value %}{% if form.start_date.value %}&{% else %}?{% endif %}end_date={{ form.end_date.value }}{% endif %}{% if form.sellers.value %}{% if form.start_date.value or form.end_date.value %}&{% else %}?{% endif %}sellers={{ form.sellers.value|stringformat:"s" }}{% endif %}" 
+      class="w3-button w3-green w3-margin-top">
+      Descarga Excel
+    </a>
+  </div>
 
-<a href="{% url 'entregas_amba_failed' %}" class="w3-button w3-green w3-margin-top" >Continuar a desambiguacion fallidos</a>
+
+  <a href="{% url 'entregas_amba_failed' %}" class="w3-button w3-green w3-margin-top" >Continuar a desambiguacion fallidos</a>
 
 {% endblock %}

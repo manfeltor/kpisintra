@@ -8,12 +8,13 @@ from .plotly_funcs import plot_tipo_percentage_bar_chart
 from usersapp.models import Company, CustomUser
 from .forms import FilterForm
 from .main_functions import define_dates_and_sellers, add_cumulative_percentage, add_relative_percentage
-from .main_functions import filter_df_date_range
 from .orderDataProcessingFunctions import query_primary_order_df_interior, enrich_primary_df_timedeltas
 from .orderDataProcessingFunctions import generate_frequency_df
 from io import BytesIO
 import pandas as pd
 from django.http import HttpResponse
+from django.utils.timezone import now
+from datetime import datetime, timedelta
 
 def entregas_panel(req):
     return render(req, "kpisentregas.html")
@@ -289,6 +290,79 @@ def entregas_interior_central_stats(req):
         "form": form,
         "usr_role": usr_role
     })
+
+
+def download_entregas_interior_central_stats(req):
+
+    cutoff_date = now().date().replace(day=1) - timedelta(days=395)
+    
+    if req.user.role == CustomUser.CLIENT:
+        usr_role = None
+    else:
+        usr_role = 1
+
+    start_date0 = req.GET.get('start_date')
+    if start_date0 == 'None' or not start_date0:
+        start_date = cutoff_date
+
+    end_date0 = req.GET.get('end_date')
+    if end_date0 == 'None' or not end_date0:
+        end_date = now().replace(tzinfo=None)
+
+    if usr_role:
+        sellers = req.GET.getlist('sellers')
+        if not sellers:
+            sellers = None
+    else:
+        sellers = [req.user.company]
+
+    delivery_interior_fields = [
+        "pedido",
+        "seller",
+        "fechaDespacho",
+        "fechaEntrega",
+        "estadoLpn",
+        "codigoPostal",
+        "codigoPostal__localidad",
+        "codigoPostal__partido",
+        "codigoPostal__provincia",
+        ]
+        
+    # primary cleaning for calculations
+    primary_df = query_primary_order_df_interior(req, sellers, start_date, end_date, delivery_interior_fields)
+    enriched_df = enrich_primary_df_timedeltas(primary_df, "fechaDespacho", "fechaEntrega")
+
+    # raw averages
+    averages_by_partido_localidad = enriched_df.groupby(['codigoPostal__partido', 'codigoPostal__localidad'])[['raw_delta_days', 'busy_delta_days']].mean().reset_index()
+    averages_by_provincia_partido = enriched_df.groupby(['codigoPostal__provincia', 'codigoPostal__partido'])[['raw_delta_days', 'busy_delta_days']].mean().reset_index()
+    averages_by_provincia = enriched_df.groupby('codigoPostal__provincia')[['raw_delta_days', 'busy_delta_days']].mean().reset_index()
+
+    output = BytesIO()
+
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+
+        averages_by_partido_localidad.to_excel(writer, index=False, sheet_name='averages_by_partido_localidad')
+        averages_by_provincia_partido.to_excel(writer, index=False, sheet_name='averages_by_provincia_partido')
+        averages_by_provincia.to_excel(writer, index=False, sheet_name='averages_by_provincia')
+
+        filter_summary = {
+            'Filter': ['Start Date', 'End Date', 'Selected Sellers'],
+            'Value': [start_date or 'Not Applied', end_date or 'Not Applied', ', '.join(sellers) if sellers else 'All Sellers']
+        }
+        filter_df = pd.DataFrame(filter_summary)
+        filter_df.to_excel(writer, index=False, sheet_name='filters')
+
+    output.seek(0)
+
+    # Prepare the response
+    response = HttpResponse(
+        output,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="zonal_averages_matrix.xlsx"'
+
+    return response
+
 
 
 def entregas_interior_descriptive_stats(req):

@@ -15,6 +15,7 @@ import pandas as pd
 from django.http import HttpResponse
 from django.utils.timezone import now
 from datetime import datetime, timedelta
+from django.contrib import messages
 
 def entregas_panel(req):
     return render(req, "kpisentregas.html")
@@ -33,17 +34,28 @@ def entregas_amba_gral(req):
 
     start_date, end_date, sellers = define_dates_and_sellers(req, form)
 
+    if req.user.role == CustomUser.CLIENT:
+        usr_role = None
+    else:
+        usr_role = 1
+
     df_query = get_sr_tracking_summary(req, sellers, False, start_date, end_date)
+    if df_query.empty:
+            messages.warning(req, "No hay data disponible para las fechas filtradas.")
+            return render(req, "entregas_amba_gral.html", context={
+                "form": form,
+                "companies": companies,
+                "usr_role": usr_role,
+            })   
     df_translated = enrich_sr_tracking_summary(df_query)
     relativized_df = get_monthly_tracking_percentages(df_translated, "responsibility")    
 
     gral_graph_html = fallidos_vs_completados_graph(relativized_df, start_date, end_date, sellers)
     failed_graph_html = failed_responsibility_breakdown_graph(relativized_df, start_date, end_date, sellers)
 
-    if req.user.role == CustomUser.CLIENT:
-        usr_role = None
-    else:
-        usr_role = 1
+    for field, errors in form.errors.items():
+        for error in errors:
+            messages.error(req, f"{field}: {error}")
 
     return render(req, "entregas_amba_gral.html", context={
         "gral_graph_html": gral_graph_html,
@@ -55,6 +67,8 @@ def entregas_amba_gral(req):
 
 
 def download_entregas_amba_gral(req):
+
+    form = FilterForm(req.POST or None)
 
     if req.user.role == CustomUser.CLIENT:
         usr_role = None
@@ -79,6 +93,12 @@ def download_entregas_amba_gral(req):
 
     # Fetch and process the data
     df_query = get_sr_tracking_summary(req, sellers, False, start_date, end_date)
+    if df_query.empty:
+            messages.warning(req, "No hay data disponible para las fechas filtradas.")
+            return render(req, "entregas_amba_gral.html", context={
+                "form": form,
+                "usr_role": usr_role,
+            }) 
     df_translated = enrich_sr_tracking_summary(df_query)
     relativized_df = get_monthly_tracking_percentages(df_translated, "responsibility")
     relativized_df.drop(columns='total_count', inplace=True)
@@ -118,17 +138,23 @@ def entregas_amba_failed(req):
 
     start_date, end_date, sellers = define_dates_and_sellers(req, form)
 
+    if req.user.role == CustomUser.CLIENT:
+        usr_role = None
+    else:
+        usr_role = 1
+
     df_query = get_sr_tracking_summary(req, sellers, failed=False, start_date=start_date, end_date=end_date)
+    if df_query.empty:
+            messages.warning(req, "No hay data disponible para las fechas filtradas.")
+            return render(req, "entregas_amba_failed.html.html", context={
+                "form": form,
+                "usr_role": usr_role,
+            })
     df_translated = enrich_sr_tracking_summary(df_query)
     relativized_df = get_monthly_tracking_percentages(df_translated, 'label')
 
     gral_graph_html = failed_responsibility_desambiguation_transport_vs_client(relativized_df, start_date, end_date, sellers_objects=sellers, transport=True)
     failed_graph_html = failed_responsibility_desambiguation_transport_vs_client(relativized_df, start_date, end_date, sellers_objects=sellers, transport=False)
-
-    if req.user.role == CustomUser.CLIENT:
-        usr_role = None
-    else:
-        usr_role = 1
 
     return render(req, "entregas_amba_failed.html", context={
         "gral_graph_html": gral_graph_html,
@@ -140,6 +166,8 @@ def entregas_amba_failed(req):
 
 
 def download_entregas_amba_failed(req):
+
+    form = FilterForm(req.POST or None)
 
     if req.user.role == CustomUser.CLIENT:
         usr_role = None
@@ -161,9 +189,14 @@ def download_entregas_amba_failed(req):
     else:
         sellers = [req.user.company]
 
-
     # Fetch and process the data
     df_query = get_sr_tracking_summary(req, sellers, True, start_date, end_date)
+    if df_query.empty:
+            messages.warning(req, "No hay data disponible para las fechas filtradas.")
+            return render(req, "entregas_amba_failed.html.html", context={
+                "form": form,
+                "usr_role": usr_role,
+            })
     df_translated = enrich_sr_tracking_summary(df_query)
     relativized_df = get_monthly_tracking_percentages(df_translated, "label")
     relativized_df.drop(columns='total_count', inplace=True)
@@ -216,6 +249,12 @@ def entregas_amba_descr(req):
         ]
     
     primary_df = query_primary_order_df_interior(req, sellers, start_date, end_date, delivery_amba_fields, True)
+    if primary_df.empty:
+            messages.warning(req, "No hay data disponible para las fechas filtradas.")
+            return render(req, "entregas_amba_zone.html", context={
+                "form": form,
+                "usr_role": usr_role,
+            })
 
     # volume partido graph
     grouped_volume_partido_df = primary_df.groupby("codigoPostal__partido", as_index=False)["pedido"].count()
@@ -268,6 +307,12 @@ def entregas_interior_central_stats(req):
         
     # primary cleaning for calculations
     primary_df = query_primary_order_df_interior(req, sellers, start_date, end_date, delivery_interior_fields)
+    if primary_df.empty:
+            messages.warning(req, "No hay data disponible para las fechas filtradas.")
+            return render(req, "entregas_interior_central_stats.html", context={
+                "form": form,
+                "usr_role": usr_role,
+            })
     enriched_df = enrich_primary_df_timedeltas(primary_df, "fechaDespacho", "fechaEntrega")
 
     # raw averages
@@ -293,6 +338,8 @@ def entregas_interior_central_stats(req):
 
 
 def download_entregas_interior_central_stats(req):
+
+    form = FilterForm(req.POST or None)
 
     cutoff_date = now().date().replace(day=1) - timedelta(days=395)
     
@@ -330,6 +377,12 @@ def download_entregas_interior_central_stats(req):
         
     # primary cleaning for calculations
     primary_df = query_primary_order_df_interior(req, sellers, start_date, end_date, delivery_interior_fields)
+    if primary_df.empty:
+            messages.warning(req, "No hay data disponible para las fechas filtradas.")
+            return render(req, "entregas_interior_central_stats.html", context={
+                "form": form,
+                "usr_role": usr_role,
+            })
     enriched_df = enrich_primary_df_timedeltas(primary_df, "fechaDespacho", "fechaEntrega")
 
     # raw averages
@@ -390,6 +443,12 @@ def entregas_interior_descriptive_stats(req):
     
     # Prepare primary data
     primary_df0 = query_primary_order_df_interior(req, sellers, start_date, end_date, delivery_interior_fields, False, True)
+    if primary_df0.empty:
+            messages.warning(req, "No hay data disponible para las fechas filtradas.")
+            return render(req, "entregas_interior_descriptive_stats.html", context={
+                "form": form,
+                "usr_role": usr_role,
+            })
     primary_df = primary_df0[primary_df0['tipo'] != 'SUCA']
     enriched_df = enrich_primary_df_timedeltas(primary_df, "fechaDespacho", "fechaEntrega")
     

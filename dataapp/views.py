@@ -84,7 +84,7 @@ def download_entregas_amba_gral(req):
     if end_date == 'None' or not end_date:
         end_date = None
 
-    if usr_role:
+    if not usr_role:
         sellers = req.GET.getlist('sellers')
         if not sellers:
             sellers = None
@@ -183,7 +183,7 @@ def download_entregas_amba_failed(req):
     if end_date == 'None' or not end_date:
         end_date = None
 
-    if usr_role:
+    if not usr_role:
         sellers = req.GET.getlist('sellers')
         if not sellers:
             sellers = None

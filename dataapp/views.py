@@ -357,7 +357,7 @@ def download_entregas_interior_central_stats(req):
     if end_date0 == 'None' or not end_date0:
         end_date = now().replace(tzinfo=None)
 
-    if usr_role:
+    if not usr_role:
         sellers = req.GET.getlist('sellers')
         if not sellers:
             sellers = None
@@ -514,7 +514,7 @@ def download_entregas_interior_descriptive_stats(req):
     if end_date0 == 'None' or not end_date0:
         end_date = now().replace(tzinfo=None)
 
-    if usr_role:
+    if not usr_role:
         sellers = req.GET.getlist('sellers')
         if not sellers:
             sellers = None

@@ -283,3 +283,29 @@ def filter_df_date_range(df, date_col, start_date, end_date):
     filtered_df = df[(df[date_col] >= pd.to_datetime(start_date)) & (df[date_col] <= pd.to_datetime(end_date))]
 
     return filtered_df
+
+
+def adjusted_calculate_percentages(df, group_col, tipo_col, frequency_col, adjustment_factors):
+    """
+    Adjusts grouped raw frequencies and calculates percentages.
+
+    Parameters:
+    - df (pd.DataFrame): DataFrame containing grouped raw frequencies.
+    - group_col (str): Column to group by (e.g., 'codigoPostal__provincia').
+    - tipo_col (str): Column specifying the types (e.g., 'DIST', 'SUCA').
+    - frequency_col (str): Column with raw frequency values.
+    - adjustment_factors (dict): Dictionary with adjustment factors for each type.
+
+    Returns:
+    - pd.DataFrame: DataFrame with adjusted frequencies and percentages.
+    """
+    # Apply adjustment multipliers based on the tipo_col
+    df[frequency_col] = df.apply(
+        lambda row: row[frequency_col] * adjustment_factors[row[tipo_col]],
+        axis=1
+    )
+
+    # Recalculate percentages based on adjusted frequencies
+    df['percentage'] = df.groupby(group_col)[frequency_col].transform(lambda x: (x / x.sum()) * 100)
+
+    return df

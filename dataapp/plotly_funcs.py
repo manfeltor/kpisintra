@@ -226,12 +226,12 @@ def create_bar_chart(df, group_col, y_col, title):
         ))
 
     # Calculate stats for each metric
-    stats_texts = ["stats:"]
+    stats_texts = ["Promedio general, Coeficiente de variacon & Moda:"]
     for y in y_col:
         avg = df[y].mean()
         cv = (df[y].std() / avg * 100) if avg else 0
         mode = df[y].mode().iloc[0] if not df[y].mode().empty else "N/A"
-        stats_texts.append(f"{y}: Avg={round(avg, 2)}, CV={round(cv, 2)}%, Mode={mode}")
+        stats_texts.append(f"{y}: Promedio={round(avg, 2)}, CV={round(cv, 2)}%, Moda={round(mode, 2)}")
     
     # Combine stats into a single annotation text
     stats_text = "<br>".join(stats_texts)
@@ -250,7 +250,7 @@ def create_bar_chart(df, group_col, y_col, title):
         title=title,
         xaxis_title=group_col,
         yaxis_title="Days",
-        legend_title="Metrics",
+        legend_title="Metricas",
         template="plotly_white",
         height=600,  # Adjusted height
         margin=dict(t=100, b=100)  # Adjusted margins for annotations
@@ -287,9 +287,9 @@ def create_filtered_chart(df, group_col, sub_group_col, y_col, title, raws_col="
 
     # Create a default annotation for "All Partidos"
     annotation_text = (
-        f"General Avg, CV & Mode:<br>"
-        f"raw_delta_days: Avg={round(general_avg_raw, 2)}, CV={round(general_cv_raw, 2)}%, Mode={general_mode_raw}<br>"
-        f"busy_delta_days: Avg={round(general_avg_busy, 2)}, CV={round(general_cv_busy, 2)}%, Mode={general_mode_busy}"
+        f"Promedio general, Coeficiente de variacon & Moda:<br>"
+        f"Dias corridos: Promedio={round(general_avg_raw, 2)}, CV={round(general_cv_raw, 2)}%, Moda={round(general_mode_raw, 2)}<br>"
+        f"Dias laboral: Promedio={round(general_avg_busy, 2)}, CV={round(general_cv_busy, 2)}%, Moda={round(general_mode_busy, 2)}"
     )
 
     # Add a default annotation
@@ -338,9 +338,9 @@ def create_filtered_chart(df, group_col, sub_group_col, y_col, title, raws_col="
         mode_busy = filtered_df[busy_col].mode().iloc[0] if not filtered_df[busy_col].mode().empty else "N/A"
 
         partido_annotation_text = (
-            f"General Avg, CV & Mode:<br>"
-            f"raw_delta_days: Avg={round(avg_raw, 2)}, CV={round(cv_raw, 2)}%, Mode={mode_raw}<br>"
-            f"busy_delta_days: Avg={round(avg_busy, 2)}, CV={round(cv_busy, 2)}%, Mode={mode_busy}"
+            f"Promedio general, Coeficiente de variacon & Moda:<br>"
+            f"Dias corridos: Promedio={round(avg_raw, 2)}, CV={round(cv_raw, 2)}%, Moda={round(mode_raw, 2)}<br>"
+            f"Dias laborales: Promedio={round(avg_busy, 2)}, CV={round(cv_busy, 2)}%, Moda={round(mode_busy, 2)}"
         )
 
         visible_array = [
@@ -353,7 +353,7 @@ def create_filtered_chart(df, group_col, sub_group_col, y_col, title, raws_col="
             'args': [
                 {'visible': visible_array},  # Update visible traces
                 {
-                    'title.text': f'Averages for {partido}',
+                    'title.text': f'Promedio por {partido}',
                     'annotations': [
                         {
                             'text': partido_annotation_text,
@@ -382,7 +382,7 @@ def create_filtered_chart(df, group_col, sub_group_col, y_col, title, raws_col="
         title=title,
         xaxis_title="Localidad",
         yaxis_title="Days",
-        legend_title="Metrics",
+        legend_title="Metricas",
         height=600,  # Taller graph
         template="plotly_white",
         margin=dict(t=100, b=100)  # Adjust margins
@@ -414,7 +414,7 @@ def plot_cumulative_percentage(df1, col1, df2, col2):
     fig.add_trace(go.Scatter(
         x=df1[col1], y=df1['cumulative_percentage'], 
         mode='lines', 
-        name='Raw Delta Days', 
+        name='Delta dias corrido', 
         fill='tozeroy',  # Fills the area under the line
         fillcolor='rgba(0, 100, 255, 0.3)',  # Semi-transparent blue
         line=dict(color='blue')
@@ -424,7 +424,7 @@ def plot_cumulative_percentage(df1, col1, df2, col2):
     fig.add_trace(go.Scatter(
         x=df2[col2], y=df2['cumulative_percentage'], 
         mode='lines', 
-        name='Busy Delta Days', 
+        name='Delta dias laborales', 
         fill='tozeroy',  # Fills the area under the line
         fillcolor='rgba(255, 100, 0, 0.3)',  # Semi-transparent orange
         line=dict(color='orange')
@@ -432,9 +432,9 @@ def plot_cumulative_percentage(df1, col1, df2, col2):
     
     # Customize layout
     fig.update_layout(
-        title='Cumulative Percentage by Days',
-        xaxis_title='Days',
-        yaxis_title='Cumulative Percentage',
+        title='Porcentage acumulativo por dias',
+        xaxis_title='Dias',
+        yaxis_title='Porcentaje acomulado',
         template='plotly_white'  # Optional: dark mode styling
     )
     
@@ -464,7 +464,7 @@ def plot_box_plots(raw_df, raw_col, busy_df, busy_col):
     # Add horizontal box plot for raw_delta_days
     fig.add_trace(go.Box(
         x=raw_data,  # Plot raw data along x-axis
-        name="Raw Delta Days",
+        name="Delta dias corrido",
         boxmean='sd',  # Show mean and standard deviation
         marker=dict(color='blue'),
         orientation='h'  # Horizontal box plot
@@ -473,7 +473,7 @@ def plot_box_plots(raw_df, raw_col, busy_df, busy_col):
     # Add horizontal box plot for busy_delta_days
     fig.add_trace(go.Box(
         x=busy_data,  # Plot busy data along x-axis
-        name="Busy Delta Days",
+        name="Delta dias laborales",
         boxmean='sd',  # Show mean and standard deviation
         marker=dict(color='orange'),
         orientation='h'  # Horizontal box plot
@@ -481,9 +481,9 @@ def plot_box_plots(raw_df, raw_col, busy_df, busy_col):
 
     # Update layout with titles and labels
     fig.update_layout(
-        title="Horizontal Box Plot of Raw vs. Busy Delta Days",
-        xaxis_title="Frequency",  # X-axis now represents frequency
-        yaxis_title="Day Type",    # Y-axis represents the type of days (Raw or Busy)
+        title="Diagrama de cajas frecuencial de dias de corrido vs dias laborales",
+        xaxis_title="Dias frequencia",  # X-axis now represents frequency
+        yaxis_title="Tipo medida",    # Y-axis represents the type of days (Raw or Busy)
         template='plotly_white'
     )
     
@@ -519,9 +519,9 @@ def plot_relative_volume_bar(df, province_col, order_col):
 
     # Update layout with titles and labels
     fig.update_layout(
-        title="Relative Volume of Orders by Province",
-        xaxis_title="Province",
-        yaxis_title="Relative Percentage (%)",
+        title="Volumen relativo de ordenes por povincia",
+        xaxis_title="Provincia",
+        yaxis_title="Porcentage relativo (%)",
         template='plotly_white',
         xaxis_tickangle=45  # Rotate x-axis labels for readability
     )
@@ -572,8 +572,8 @@ def plot_tipo_percentage_bar_chart(df, province_col, tipo_col, percentage_col):
     
     # Add average annotations
     avg_text = (
-        f"Avg DIST: {avg_dist:.2f}%<br>"
-        f"Avg SUCA: {avg_suca:.2f}%"
+        f"Promedio DIST: {avg_dist:.2f}%<br>"
+        f"Promedio SUCA: {avg_suca:.2f}%"
     )
     fig.add_annotation(
         text=avg_text,
@@ -588,8 +588,8 @@ def plot_tipo_percentage_bar_chart(df, province_col, tipo_col, percentage_col):
     fig.update_layout(
         barmode="group",  # Grouped bar chart
         title="Percentage Comparison of DIST and SUCA by Province",
-        xaxis_title="Province",
-        yaxis_title="Percentage",
+        xaxis_title="Provincia",
+        yaxis_title="Porcentaje",
         legend_title="Tipo",
         template="plotly_white",
         margin=dict(t=100)  # Adjust margin for annotation space

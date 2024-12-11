@@ -54,19 +54,19 @@
 
 {% block main_page %}
 <div>
-    <h2>Cumulative Distribution</h2>
-    {{ density_graph|safe }}
+  <h2 style="margin-top:30px;">Distribucion de densidad acumulativa</h2>
+  {{ density_graph|safe }}
 </div>
 <div>
-  <h2>Cumulative Distribution</h2>
+  <h2 style="margin-top:50px;">Distribucion numerica de valores y simetria </h2>
   {{ box_plot|safe }}
 </div>
 <div>
-  <h2>Cumulative Distribution</h2>
+  <h2 style="margin-top:50px;">Distribucion de volumen relativo por provincia</h2>
   {{ volume_plot|safe }}
 </div>
 <div>
-  <h2>Cumulative Distribution</h2>
+  <h2 style="margin-top:50px;">Distribucion relativa de tipo de operacion</h2>
   {{ suca_vol_graph|safe }}
 </div>
 

@@ -40,6 +40,8 @@ def get_sr_tracking_summary(request, sellers_objects=None, failed=False, start_d
         query = query.filter(planned_date__lte=end_date)
 
     query = query.filter(tipo="DIST")
+    query = query.exclude(checkout_observation="9e4619d2-240f-4efb-bc73-f91e9469cd91")
+
 
     if failed:
         query = query.filter(status='failed')

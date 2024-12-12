@@ -41,7 +41,7 @@ def query_primary_order_df_interior(request, sellers_objects, start_date, end_da
         seller = request.user.company
         query = query.filter(seller=seller)
     elif sellers_objects:
-        sellers = [seller.name for seller in sellers_objects] if sellers_objects else None
+        sellers = [seller.id for seller in sellers_objects] if sellers_objects else None
         query = query.filter(seller__in=sellers)
 
     # Use the provided fields or default to fetching all fields

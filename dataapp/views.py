@@ -473,7 +473,7 @@ def entregas_interior_descriptive_stats(req):
     # SUCA volume plot
     grouped_vol_SUCA_df0 = primary_df0.groupby(["codigoPostal__provincia", "tipo"], as_index=False)["pedido"].count()
     adjustment_factors = {'DIST': 0.93, 'SUCA': 1.07}
-    grouped_vol_SUCA_df = adjusted_calculate_percentages(
+    grouped_vol_SUCA_df1 = adjusted_calculate_percentages(
         grouped_vol_SUCA_df0,
         group_col='codigoPostal__provincia',
         tipo_col='tipo',
@@ -481,6 +481,7 @@ def entregas_interior_descriptive_stats(req):
         adjustment_factors=adjustment_factors
     )
     # grouped_vol_SUCA_df['percentage'] = grouped_vol_SUCA_df.groupby('codigoPostal__provincia')['pedido'].transform(lambda x: (x / x.sum()) * 100)
+    grouped_vol_SUCA_df = grouped_vol_SUCA_df1.sort_values(by="percentage", ascending=True)
     SUCA_vol_graph = plot_tipo_percentage_bar_chart(grouped_vol_SUCA_df, "codigoPostal__provincia", "tipo", "percentage")
     
     return render(req, "entregas_interior_descriptive_stats.html",

@@ -57,13 +57,15 @@ def fallidos_vs_completados_graph(df, start_date, end_date, sellers_objects=None
             x=pivot_table.index,
             y=pivot_table[col],
             name=col,
-            hoverinfo="x+y+name"
+            hoverinfo="x+y+name",
+            text=round(pivot_table[col],2 ),
+            textposition='inside'
         ))
 
     # Update layout for better visualization
     fig.update_layout(
         barmode='stack',
-        title="Fallidos vs Completados - Últimos 12 Meses",
+        title="Efectividad entregas AMBA",
         xaxis=dict(
         title="Mes",
         type="category",  # Force x-axis to be categorical
@@ -134,7 +136,9 @@ def failed_responsibility_breakdown_graph(df, start_date, end_date, sellers_obje
             x=pivot_table.index,
             y=pivot_table[col],
             name=col,
-            hoverinfo="x+y+name"
+            hoverinfo="x+y+name",
+            text=round(pivot_table[col],2 ),
+            textposition='inside'
         ))
 
     # Update layout for better visualization
@@ -194,7 +198,9 @@ def failed_responsibility_desambiguation_transport_vs_client(df, start_date, end
             x=pivot_table.index,
             y=pivot_table[col],
             name=col,
-            hoverinfo="x+y+name"
+            hoverinfo="x+y+name",
+            text=round(pivot_table[col],2 ),
+            textposition='inside'
         ))
 
     # Update layout for better visualization
@@ -213,7 +219,8 @@ def failed_responsibility_desambiguation_transport_vs_client(df, start_date, end
     return fig.to_html(full_html=False)
 
 
-def create_bar_chart(df, group_col, y_col, title):
+def create_bar_chart(df0, group_col, y_col, title):
+    df = df0.sort_values(by=y_col, ascending=False)
     fig = go.Figure()
     
     # Create bar traces
@@ -222,7 +229,9 @@ def create_bar_chart(df, group_col, y_col, title):
             x=df[group_col],
             y=df[y],
             name=y,
-            hoverinfo="x+y+name"
+            hoverinfo="x+y+name",
+            text=round(df[y],2 ),
+            textposition='inside'
         ))
 
     # Calculate stats for each metric
@@ -259,7 +268,8 @@ def create_bar_chart(df, group_col, y_col, title):
     return fig.to_html(full_html=False)
 
 
-def create_filtered_chart(df, group_col, sub_group_col, y_col, title, raws_col="raw_delta_days", busy_col='busy_delta_days'):
+def create_filtered_chart(df0, group_col, sub_group_col, y_col, title, raws_col="raw_delta_days", busy_col='busy_delta_days'):
+    df = df0.sort_values(by=busy_col, ascending=False)
     partidos = df[group_col].unique()
 
     fig = go.Figure()
@@ -273,7 +283,9 @@ def create_filtered_chart(df, group_col, sub_group_col, y_col, title, raws_col="
                 y=filtered_df[y],
                 name=f"{y} ({partido})",
                 hoverinfo="x+y+name",
-                visible=(partido == partidos[0])  # Show only the first partido by default
+                visible=(partido == partidos[0]),  # Show only the first partido by default
+                text=round(filtered_df[y], 2),
+                textposition='inside'
             ))
 
     # Calculate general stats for "All Partidos"
@@ -412,12 +424,13 @@ def plot_cumulative_percentage(df1, col1, df2, col2):
     
     # Add the first line (raw_delta_days vs cumulative_percentage)
     fig.add_trace(go.Scatter(
-        x=df1[col1], y=df1['cumulative_percentage'], 
+        x=df1[col1], 
+        y=df1['cumulative_percentage'], 
         mode='lines', 
         name='Delta dias corrido', 
         fill='tozeroy',  # Fills the area under the line
         fillcolor='rgba(0, 100, 255, 0.3)',  # Semi-transparent blue
-        line=dict(color='blue')
+        line=dict(color='blue'),
     ))
     
     # Add the second line (busy_delta_days vs cumulative_percentage)
@@ -514,7 +527,9 @@ def plot_relative_volume_bar(df, province_col, order_col):
         x=provinces,  # Provinces on x-axis
         y=relative_percentages,  # Relative percentages on y-axis
         marker=dict(color='royalblue'),
-        name="Relative Volume of Orders"
+        name="Relative Volume of Orders",
+        text=round(relative_percentages, 2),
+        textposition='inside'
     ))
 
     # Update layout with titles and labels
@@ -559,7 +574,9 @@ def plot_tipo_percentage_bar_chart(df, province_col, tipo_col, percentage_col):
         x=dist_df[province_col],
         y=dist_df[percentage_col],
         name="DIST",
-        marker=dict(color="blue")
+        marker=dict(color="blue"),
+        text=round(dist_df[percentage_col], 2),
+        textposition='inside'
     ))
     
     # Add bar for SUCA
@@ -567,7 +584,9 @@ def plot_tipo_percentage_bar_chart(df, province_col, tipo_col, percentage_col):
         x=suca_df[province_col],
         y=suca_df[percentage_col],
         name="SUCA",
-        marker=dict(color="orange")
+        marker=dict(color="orange"),
+        text=round(suca_df[percentage_col], 2),
+        textposition='inside'
     ))
     
     # Add average annotations

@@ -8,7 +8,7 @@ from .plotly_funcs import plot_tipo_percentage_bar_chart
 from usersapp.models import Company, CustomUser
 from .forms import FilterForm
 from .main_functions import define_dates_and_sellers, add_cumulative_percentage, add_relative_percentage
-from .main_functions import adjusted_calculate_percentages
+from .main_functions import adjusted_calculate_percentages, percentage_strip
 from .orderDataProcessingFunctions import query_primary_order_df_interior, enrich_primary_df_timedeltas
 from .orderDataProcessingFunctions import generate_frequency_df
 from io import BytesIO
@@ -314,10 +314,10 @@ def entregas_interior_central_stats(req):
                 "form": form,
                 "usr_role": usr_role,
             })
-    enriched_df = enrich_primary_df_timedeltas(primary_df, "fechaDespacho", "fechaEntrega")
+    enriched_df0 = enrich_primary_df_timedeltas(primary_df, "fechaDespacho", "fechaEntrega")
 
-    print(enriched_df['raw_delta_days'].nlargest(300))
-    print(enriched_df['raw_delta_days'].count())
+    enriched_df = percentage_strip(enriched_df0, 'raw_delta_days', 0.60, True, True)
+    print(enriched_df)
 
     # raw averages
     averages_by_partido_localidad = enriched_df.groupby(['codigoPostal__partido', 'codigoPostal__localidad'])[['raw_delta_days', 'busy_delta_days']].mean().reset_index()
@@ -330,9 +330,6 @@ def entregas_interior_central_stats(req):
     provincia_graph = create_bar_chart(averages_by_provincia, 'codigoPostal__provincia', ['raw_delta_days', 'busy_delta_days'], "Promedios por provincia")
 
     return render(req, "entregas_interior_central_stats.html", context={
-        # "weighted_localidad_graph": weighted_localidad_graph,
-        # "weighted_partido_graph": weighted_partido_graph,
-        # "weighted_provincia_graph": weighted_provincia_graph,
         "localidad_graph": localidad_graph,
         "partido_graph": partido_graph,
         "provincia_graph": provincia_graph,

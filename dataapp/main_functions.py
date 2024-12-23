@@ -309,3 +309,63 @@ def adjusted_calculate_percentages(df, group_col, tipo_col, frequency_col, adjus
     df['percentage'] = df.groupby(group_col)[frequency_col].transform(lambda x: (x / x.sum()) * 100)
 
     return df
+
+
+def percentage_strip(df, column, percentage, left=False, right=False):
+    """
+    Strips a percentage of rows from a DataFrame based on the values of a specified column.
+    The trimming can be performed from the top (right), bottom (left), or both ends.
+
+    Parameters:
+    ----------
+    df : pandas.DataFrame
+        The DataFrame to process.
+    column : str
+        The name of the column to use for sorting and trimming rows.
+    percentage : float
+        The percentage (0 to 1) of rows to trim from the DataFrame.
+    left : bool, default False
+        If True, trims the specified percentage of rows starting from the smallest values (ascending order).
+    right : bool, default False
+        If True, trims the specified percentage of rows starting from the largest values (descending order).
+
+    Returns:
+    -------
+    pandas.DataFrame
+        The trimmed DataFrame after removing the specified percentage of rows from the specified side(s).
+        If neither `left` nor `right` is True, the original DataFrame is returned.
+
+    Notes:
+    ------
+    - If both `left` and `right` are True, the percentage of rows is trimmed equally from both ends.
+      Any rounding issues when splitting rows will trim more from the right.
+    - Percentage values must be between 0 and 1, inclusive.
+    """
+
+    # Validate percentage
+    if not 0 <= percentage <= 1:
+        raise ValueError("Percentage must be between 0 and 1.")
+
+    # Calculate number of rows to trim
+    num_rows_to_strip = int(len(df) * (percentage/100))
+    print(num_rows_to_strip)
+
+    if left and right:
+        # Trim from both ends
+        df_sorted = df.sort_values(by=column)
+        df_trimmed = df_sorted.iloc[num_rows_to_strip:-num_rows_to_strip].reset_index(drop=True)
+        return df_trimmed
+    elif right:
+        # Trim from the top
+        df_sorted = df.sort_values(by=column, ascending=False)
+        df_trimmed = df_sorted.iloc[num_rows_to_strip:].reset_index(drop=True)
+        return df_trimmed
+    elif left:
+        # Trim from the bottom
+        df_sorted = df.sort_values(by=column, ascending=True)
+        df_trimmed = df_sorted.iloc[num_rows_to_strip:].reset_index(drop=True)
+        return df_trimmed
+    else:
+        # No trimming side specified
+        print("No trimming side selected, returning the original DataFrame.")
+        return df

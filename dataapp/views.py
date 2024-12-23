@@ -49,7 +49,7 @@ def entregas_amba_gral(req):
                 "usr_role": usr_role,
             })   
     df_translated = enrich_sr_tracking_summary(df_query)
-    relativized_df = get_monthly_tracking_percentages(df_translated, "responsibility")    
+    relativized_df = get_monthly_tracking_percentages(df_translated, "responsibility")
 
     gral_graph_html = fallidos_vs_completados_graph(relativized_df, start_date, end_date, sellers)
     failed_graph_html = failed_responsibility_breakdown_graph(relativized_df, start_date, end_date, sellers)
@@ -315,6 +315,9 @@ def entregas_interior_central_stats(req):
                 "usr_role": usr_role,
             })
     enriched_df = enrich_primary_df_timedeltas(primary_df, "fechaDespacho", "fechaEntrega")
+
+    print(enriched_df['raw_delta_days'].nlargest(300))
+    print(enriched_df['raw_delta_days'].count())
 
     # raw averages
     averages_by_partido_localidad = enriched_df.groupby(['codigoPostal__partido', 'codigoPostal__localidad'])[['raw_delta_days', 'busy_delta_days']].mean().reset_index()

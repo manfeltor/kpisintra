@@ -56,7 +56,7 @@ def get_sr_tracking_summary(request, sellers_objects=None, failed=False, start_d
         query = query.filter(seller__in=sellers)
     
     query = query.values(
-        'planned_date', 'checkout_observation', 'seller'
+        'planned_date', 'checkout_observation', 'seller', 'title'
     ).annotate(
         tracking_count=Count('tracking_id')
     ).order_by('planned_date', 'checkout_observation', 'seller')
@@ -135,10 +135,8 @@ def get_monthly_tracking_percentages(df, column):
 
     # Compute total trackings per month
     monthly_totals = monthly_summary.groupby('month')['total_count'].transform('sum')
-
     # Add percentage column
     monthly_summary['percentage'] = (monthly_summary['total_count'] / monthly_totals) * 100
-
     # Convert month back to a proper format for plotting
     monthly_summary['month'] = monthly_summary['month'].dt.to_timestamp()
 

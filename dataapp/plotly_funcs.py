@@ -22,7 +22,6 @@ def fallidos_vs_completados_graph(df, start_date, end_date, sellers_objects=None
         Plotly HTML div as a string to embed in the template.
     """
 
-
     start_date = pd.to_datetime(start_date)
     start_date = start_date.replace(tzinfo=None)
     end_date = pd.to_datetime(end_date)
@@ -40,6 +39,9 @@ def fallidos_vs_completados_graph(df, start_date, end_date, sellers_objects=None
         filtered_df = filtered_df[filtered_df['seller'].isin(sellers)]
 
     filtered_df['month'] = filtered_df['month'].dt.strftime('%Y-%m-%d')
+    filtered_df.loc[filtered_df['responsibility'] == 'transporte', 'type'] = '02_visitado'
+    filtered_df.loc[filtered_df['type'] == 'failed', 'type'] = '03_fallido'
+    filtered_df.loc[filtered_df['type'] == 'completed', 'type'] = '01_completado'
 
     filtered_df = (
     filtered_df.groupby(['month', 'type'])
@@ -50,6 +52,13 @@ def fallidos_vs_completados_graph(df, start_date, end_date, sellers_objects=None
     # Pivot the data for plotting
     pivot_table = filtered_df.pivot(index='month', columns='type', values='percentage').fillna(0)
 
+    color_map = {
+    '01_completado': '#636efa',
+    '02_visitado': '#08cc94',
+    '03_fallido': '#ef553b'
+    }
+    
+
     # Create traces for each type
     fig = go.Figure()
     for col in pivot_table.columns:
@@ -59,8 +68,18 @@ def fallidos_vs_completados_graph(df, start_date, end_date, sellers_objects=None
             name=col,
             hoverinfo="x+y+name",
             text=round(pivot_table[col],2 ),
-            textposition='inside'
+            textposition='inside',
+            marker=dict(color=color_map[col])
         ))
+
+    # for category in filtered_df['type'].unique():
+    #     fig.add_trace(go.Bar(
+    #         x=filtered_df[filtered_df['type'] == category]['month'],  # Filtered x-values
+    #         y=filtered_df[filtered_df['type'] == category]['percentage'],  # Filtered y-values
+    #         name=category,
+    #         marker=dict(color=color_map[category])
+    #         )
+    #         )
 
     # Update layout for better visualization
     fig.update_layout(
@@ -75,7 +94,7 @@ def fallidos_vs_completados_graph(df, start_date, end_date, sellers_objects=None
         legend_title="Tipo",
         template="plotly_white",
         margin=dict(l=40, r=40, t=40, b=40),
-        hovermode="x unified"
+        hovermode="x unified",
     )
 
     # Return the Plotly div

@@ -522,7 +522,7 @@ def plot_box_plots(raw_df, raw_col, busy_df, busy_col):
     return fig.to_html(full_html=False)
 
 
-def plot_relative_volume_bar(df, province_col, order_col):
+def plot_relative_volume_bar(df, province_col, order_col, title="Volumen relativo de ordenes por povincia"):
     """
     Plots a bar chart for relative volume of orders per province as percentages.
     
@@ -553,7 +553,7 @@ def plot_relative_volume_bar(df, province_col, order_col):
 
     # Update layout with titles and labels
     fig.update_layout(
-        title="Volumen relativo de ordenes por povincia",
+        title=title,
         xaxis_title="Provincia",
         yaxis_title="Porcentage relativo (%)",
         template='plotly_white',

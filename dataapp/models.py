@@ -97,7 +97,37 @@ class SRTrackingData(models.Model):
 class CATrackingData(models.Model):
     trackingTransporte = models.CharField(max_length=100, unique=True)
     rawJson = models.JSONField(null=True, blank=True)
-    
+
+
+partido_flex_postalcodes_zonification_matrix = {
+    'JOSE CLEMENTE PAZ': {'zona': 'NOROESTE', 'apertura': 'ZONA_1'},
+    'HURLINGHAM': {'zona': 'NOROESTE', 'apertura': 'ZONA_3'},
+    'ITUZAINGO': {'zona': 'OESTE', 'apertura': 'ZONA_3'},
+    'SAN FERNANDO': {'zona': 'NORTE', 'apertura': 'ZONA_2'},
+    'MALVINAS ARGENTINAS': {'zona': 'NORTE', 'apertura': 'ZONA_1'},
+    'SAN MIGUEL': {'zona': 'NOROESTE', 'apertura': 'ZONA_2'},
+    'EZEIZA': {'zona': 'SUR', 'apertura': 'ZONA_3'},
+    'FLORENCIO VARELA': {'zona': 'SUR', 'apertura': 'ZONA_3'},
+    'ESTEBAN ECHEVERRIA': {'zona': 'SUR', 'apertura': 'ZONA_3'},
+    'AVELLANEDA': {'zona': 'SUR', 'apertura': 'ZONA_3'},
+    'MERLO': {'zona': 'OESTE', 'apertura': 'ZONA_3'},
+    'MORON': {'zona': 'OESTE', 'apertura': 'ZONA_3'},
+    'BERAZATEGUI': {'zona': 'SUR', 'apertura': 'ZONA_3'},
+    'GENERAL SAN MARTIN': {'zona': 'NORTE', 'apertura': 'ZONA_3'},
+    'ALMIRANTE BROWN': {'zona': 'SUR', 'apertura': 'ZONA_3'},
+    'MORENO': {'zona': 'OESTE', 'apertura': 'ZONA_3'},
+    'LANUS': {'zona': 'SUR', 'apertura': 'ZONA_3'},
+    'SAN ISIDRO': {'zona': 'NORTE', 'apertura': 'ZONA_3'},
+    'TRES DE FEBRERO': {'zona': 'NOROESTE', 'apertura': 'ZONA_3'},
+    'LA MATANZA NORTE': {'zona': 'OESTE', 'apertura': 'ZONA_3'},
+    'LA MATANZA SUR': {'zona': 'OESTE', 'apertura': 'ZONA_3'},
+    'VICENTE LOPEZ': {'zona': 'NORTE', 'apertura': 'ZONA_3'},
+    'QUILMES': {'zona': 'SUR', 'apertura': 'ZONA_3'},
+    'TIGRE': {'zona': 'NORTE', 'apertura': 'ZONA_1'},
+    'LOMAS DE ZAMORA': {'zona': 'SUR', 'apertura': 'ZONA_3'},
+    'CIUDAD AUTONOMA DE BUENOS AIRES': {'zona': 'CABA', 'apertura': 'ZONA_3'}
+}
+
 
 class PostalCodes(models.Model):
     cp = models.CharField(max_length=4, unique=True)

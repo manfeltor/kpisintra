@@ -38,36 +38,6 @@
       <button type="submit" class="w3-button w3-block w3-green w3-margin-top">Aplicar Filtros</button>
     </form>
 
-    <!-- <form method="get" action="">
-      <label for="start_date">Desde:</label>
-      <input
-        type="date"
-        name="start_date"
-        class="w3-input"
-        value="{{ request.GET.start_date|default:'' }}"
-      />
-      <label for="end_date">Hasta:</label>
-      <input
-        type="date"
-        name="end_date"
-        class="w3-input"
-        value="{{ request.GET.end_date|default:'' }}"
-      />
-      <button type="submit" class="w3-button w3-block w3-green w3-margin-top">
-        Filtrar
-      </button>
-    </form>
-
-    <label for="sellers">Seleccionar Vendedores:</label>
-    <select name="sellers" id="sellers" class="w3-select" multiple>
-      {% for company in companies %}
-      <option value="{{ company.name }}" 
-              {% if company.name in request.GET.sellers %}selected{% endif %}>
-          {{ company.name }}
-      </option>
-    {% endfor %}
-    </select> -->
-
     <a href="{% url 'entregas_amba' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite;margin-top:30px;">regresa a entregas AMBA</a>
     <a href="{% url 'home' %}" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white" style="color: antiquewhite">Home</a>
     {% if request.user.is_authenticated %}
@@ -99,45 +69,7 @@
 </div>
 {% endif %}
 
-<!-- <div class="accordion">
-  <button class="accordion-button" onclick="toggleAccordion('raw-stats')">Raw Central Statistics</button>
-  <div id="raw-stats" class="accordion-content">
-    {% if localidad_graph %}
-      <div>{{ localidad_graph|safe }}</div>
-    {% endif %}
-    {% if partido_graph %}
-      <div>{{ partido_graph|safe }}</div>
-    {% endif %}
-    {% if provincia_graph %}
-      <div>{{ provincia_graph|safe }}</div>
-    {% endif %}
-  </div> -->
-
-  <!-- <button class="accordion-button" onclick="toggleAccordion('weighted-stats')">Weighted Central Statistics</button>
-  <div id="weighted-stats" class="accordion-content">
-    {% if weighted_localidad_graph %}
-      <div>{{ weighted_localidad_graph|safe }}</div>
-    {% endif %}
-    {% if weighted_partido_graph %}
-      <div>{{ weighted_partido_graph|safe }}</div>
-    {% endif %}
-    {% if weighted_provincia_graph %}
-      <div>{{ weighted_provincia_graph|safe }}</div>
-    {% endif %}
-  </div>
-</div> -->
-
-<div class="w3-container" id="ambadiv" style="margin-top:50px; margin-bottom: 70px;">
-  <h1 class="w3-xxxlarge w3-text-red"><b>Descarga Excel</b></h1>
-  <hr style="width:50px;border:5px solid #f33d30" class="w3-round">
-  <p>Descarga la matriz de datos de este dashboard como una tabla de excel.</p>
-  <a href="{% url 'download_entregas_interior_central_stats' %}{% if form.start_date.value %}?start_date={{ form.start_date.value }}{% endif %}{% if form.end_date.value %}{% if form.start_date.value %}&{% else %}?{% endif %}end_date={{ form.end_date.value }}{% endif %}{% if form.sellers.value %}{% if form.start_date.value or form.end_date.value %}&{% else %}?{% endif %}sellers={{ form.sellers.value|stringformat:"s" }}{% endif %}" 
-    class="w3-button w3-green w3-margin-top">
-    Descarga Excel
-  </a>
-</div>
-
-<a style="margin-top: 30px;" href="{% url 'entregas_amba_failed' %}" class="w3-button w3-green w3-margin-top" >Continuar a desambiguacion fallidos</a>
+<a style="margin-top: 30px;" href="{% url 'entregas_interior_descriptive' %}" class="w3-button w3-green w3-margin-top" >Ir a estadisticas descriptivas</a>
 
 {% endblock %}
 

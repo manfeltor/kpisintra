@@ -6,6 +6,7 @@ from .plotly_funcs import failed_responsibility_desambiguation_transport_vs_clie
 from .plotly_funcs import create_filtered_chart, plot_cumulative_percentage, plot_box_plots, plot_relative_volume_bar
 from .plotly_funcs import plot_tipo_percentage_bar_chart
 from usersapp.models import Company, CustomUser
+from dataapp.models import partido_flex_postalcodes_zonification_matrix
 from .forms import FilterForm
 from .main_functions import define_dates_and_sellers, add_cumulative_percentage, add_relative_percentage
 from .main_functions import adjusted_calculate_percentages, percentage_strip
@@ -66,7 +67,7 @@ def entregas_amba_gral(req):
         "usr_role": usr_role
     })
 
-
+# DEPRECATED
 def download_entregas_amba_gral(req):
 
     form = FilterForm(req.POST or None)
@@ -165,7 +166,7 @@ def entregas_amba_failed(req):
         "usr_role": usr_role
     })
 
-
+# DEPRECATED
 def download_entregas_amba_failed(req):
 
     form = FilterForm(req.POST or None)
@@ -247,25 +248,32 @@ def entregas_amba_descr(req):
         "codigoPostal__localidad",
         "codigoPostal__partido",
         "codigoPostal__provincia",
+        "codigoPostal__flex",
         ]
     
-    primary_df = query_primary_order_df_interior(req, sellers, start_date, end_date, delivery_amba_fields, True)
-    if primary_df.empty:
+    primary_df0 = query_primary_order_df_interior(req, sellers, start_date, end_date, delivery_amba_fields, True)
+    if primary_df0.empty:
             messages.warning(req, "No hay data disponible para las fechas filtradas.")
             return render(req, "entregas_amba_zone.html", context={
                 "form": form,
                 "usr_role": usr_role,
             })
+    
+    primary_df = primary_df0[primary_df0['codigoPostal__flex'] == True]
+    grouped_volume_df = primary_df.groupby([
+            "codigoPostal__localidad",
+            "codigoPostal__partido",
+        ], as_index=False)["pedido"].count()
+    grouped_relative_volume_df0 = add_relative_percentage(grouped_volume_df, 'pedido')
+    zonification_df = pd.DataFrame.from_dict(partido_flex_postalcodes_zonification_matrix, orient='index')
+    grouped_relative_volume_df = grouped_relative_volume_df0.merge(zonification_df, left_on='codigoPostal__partido', right_index=True, how='left')
 
-    # volume partido graph
-    grouped_volume_partido_df = primary_df.groupby("codigoPostal__partido", as_index=False)["pedido"].count()
-    grouped_relativized_volume_partido_df = add_relative_percentage(grouped_volume_partido_df, "pedido")
-    # partido_volume_graph = plot_relative_volume_bar(grouped_volume_partido_df, "codigoPostal__partido", )
-
-    # volume localidad graph
-    grouped_volume_localidad_df = primary_df.groupby(["codigoPostal__localidad", "codigoPostal__partido"], as_index=False)["pedido"].count()
-    grouped_volume_localidad_df['percentage'] = grouped_volume_localidad_df.groupby('codigoPostal__partido')['pedido'].transform(lambda x: (x / x.sum()) * 100)
-    filtered_df = grouped_volume_localidad_df[grouped_volume_localidad_df['codigoPostal__localidad'] == 'CIUDAD AUTONOMA DE BUENOS AIRES']
+    # partido graph
+    province_df = grouped_relative_volume_df.groupby([
+         "zona"
+        ], as_index=False)["relative_percentage"].sum().sort_values(by="relative_percentage", ascending=True)
+    print(province_df)
+    province_graph_html = plot_relative_volume_bar(province_df, "zona", "relative_percentage", "Volumen relativo de ordenes por partido")
 
     if req.user.role == CustomUser.CLIENT:
         usr_role = None
@@ -275,7 +283,8 @@ def entregas_amba_descr(req):
     return render(req, "entregas_amba_zone.html", context={
         "companies": companies,
         "form": form,
-        "usr_role": usr_role
+        "usr_role": usr_role,
+        "province_graph_html": province_graph_html
     })
 
 
@@ -315,9 +324,7 @@ def entregas_interior_central_stats(req):
                 "usr_role": usr_role,
             })
     enriched_df0 = enrich_primary_df_timedeltas(primary_df, "fechaDespacho", "fechaEntrega")
-
     enriched_df = percentage_strip(enriched_df0, 'raw_delta_days', 0.60, True, True)
-    print(enriched_df)
 
     # raw averages
     averages_by_partido_localidad = enriched_df.groupby(['codigoPostal__partido', 'codigoPostal__localidad'])[['raw_delta_days', 'busy_delta_days']].mean().reset_index()
@@ -337,7 +344,7 @@ def entregas_interior_central_stats(req):
         "usr_role": usr_role
     })
 
-
+# DEPRECATED
 def download_entregas_interior_central_stats(req):
 
     form = FilterForm(req.POST or None)

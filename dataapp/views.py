@@ -4,7 +4,7 @@ from .srtrackingDataProcessingFunctions import get_monthly_tracking_percentages
 from .plotly_funcs import fallidos_vs_completados_graph, failed_responsibility_breakdown_graph
 from .plotly_funcs import failed_responsibility_desambiguation_transport_vs_client, create_bar_chart
 from .plotly_funcs import create_filtered_chart, plot_cumulative_percentage, plot_box_plots, plot_relative_volume_bar
-from .plotly_funcs import plot_tipo_percentage_bar_chart
+from .plotly_funcs import plot_tipo_percentage_bar_chart, plot_hierarchical_bar_chart
 from usersapp.models import Company, CustomUser
 from dataapp.models import partido_flex_postalcodes_zonification_matrix
 from .forms import FilterForm
@@ -16,7 +16,7 @@ from io import BytesIO
 import pandas as pd
 from django.http import HttpResponse
 from django.utils.timezone import now
-from datetime import datetime, timedelta
+from datetime import timedelta
 from django.contrib import messages
 
 def entregas_panel(req):
@@ -259,7 +259,8 @@ def entregas_amba_descr(req):
                 "usr_role": usr_role,
             })
     
-    primary_df = primary_df0[primary_df0['codigoPostal__flex'] == True]
+    # primary_df = primary_df0[primary_df0['codigoPostal__flex'] == True]
+    primary_df = primary_df0
     grouped_volume_df = primary_df.groupby([
             "codigoPostal__localidad",
             "codigoPostal__partido",
@@ -272,8 +273,15 @@ def entregas_amba_descr(req):
     province_df = grouped_relative_volume_df.groupby([
          "zona"
         ], as_index=False)["relative_percentage"].sum().sort_values(by="relative_percentage", ascending=True)
-    print(province_df)
     province_graph_html = plot_relative_volume_bar(province_df, "zona", "relative_percentage", "Volumen relativo de ordenes por partido")
+
+    # apertura graph
+    apertura_df = grouped_relative_volume_df.groupby([
+         "zona", "apertura"
+        ], as_index=False)["relative_percentage"].sum().sort_values(by="relative_percentage", ascending=True)
+    apertura_graph_html = plot_hierarchical_bar_chart(apertura_df, "zona", "apertura", "relative_percentage", "Apertura participacion relativa")
+
+    df_html = (grouped_relative_volume_df.sort_values(by="zona", ascending=True)).to_html(classes='table table-striped', index=False)
 
     if req.user.role == CustomUser.CLIENT:
         usr_role = None
@@ -284,7 +292,9 @@ def entregas_amba_descr(req):
         "companies": companies,
         "form": form,
         "usr_role": usr_role,
-        "province_graph_html": province_graph_html
+        "province_graph_html": province_graph_html,
+        "apertura_graph_html": apertura_graph_html,
+        "df_html": df_html
     })
 
 

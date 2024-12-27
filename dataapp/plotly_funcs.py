@@ -634,3 +634,53 @@ def plot_tipo_percentage_bar_chart(df, province_col, tipo_col, percentage_col):
     )
     
     return fig.to_html(full_html=False)
+
+
+def plot_hierarchical_bar_chart(df, primary_col, secondary_col, value_col, title="Hierarchical Bar Chart"):
+    """
+    Plots a hierarchical bar chart where each primary category on the X-axis is subdivided into secondary categories.
+
+    Parameters:
+    - df (pandas.DataFrame): The dataframe with the data to plot.
+    - primary_col (str): The column name for primary categories (e.g., months).
+    - secondary_col (str): The column name for secondary categories (e.g., product types).
+    - value_col (str): The column name for the values to plot (e.g., sales or percentages).
+    - title (str): The title of the chart.
+
+    Returns:
+    - Plotly bar chart figure as HTML.
+    """
+    # Ensure primary_col is sorted
+    df = df.sort_values(by=[primary_col, secondary_col])
+    
+    # Get unique primary categories (e.g., months) and secondary categories (e.g., product types)
+    primary_categories = df[primary_col].unique()
+    secondary_categories = df[secondary_col].unique()
+
+    # Create the figure
+    fig = go.Figure()
+
+    # Add a trace for each secondary category
+    for subcat in secondary_categories:
+        filtered_df = df[df[secondary_col] == subcat]
+        fig.add_trace(go.Bar(
+            x=filtered_df[primary_col],
+            y=filtered_df[value_col],
+            name=subcat,
+            text=round(filtered_df[value_col], 2),
+            textposition='inside'
+        ))
+
+    # Update layout for the hierarchical structure
+    fig.update_layout(
+        barmode='group',  # Group bars for each primary category
+        title=title,
+        xaxis_title=primary_col.capitalize(),
+        yaxis_title=value_col.capitalize(),
+        legend_title=secondary_col.capitalize(),
+        template='plotly_white',
+        xaxis_tickangle=45,  # Rotate x-axis labels for readability
+        height=600  # Adjust height for better visualization
+    )
+
+    return fig.to_html(full_html=False)

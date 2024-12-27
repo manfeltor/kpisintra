@@ -58,6 +58,16 @@
           {{ province_graph_html|safe }}
       </div>
 {% endif %}
+{% if apertura_graph_html %}
+      <div style="margin-top:50px">
+          {{ apertura_graph_html|safe }}
+      </div>
+{% endif %}
+{% if df_html %}
+      <div style="margin-top:50px">
+          {{ df_html|safe }}
+      </div>
+{% endif %}
 <a href="{% url 'entregas_amba' %}" class="w3-button w3-green w3-margin-top" >Regresa a panel AMBA</a>
 
 {% endblock %}

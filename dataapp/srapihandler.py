@@ -124,5 +124,3 @@ def process_tracking_data(request, update_mode=False):
                 messages.error(request, f"Failed to process data for {planned_date}: {e}")
     
     logger.info("Batch processing complete.")
-
-

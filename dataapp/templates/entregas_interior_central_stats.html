@@ -53,6 +53,7 @@
 {% endblock %}
 
 {% block main_page %}
+
 {% if provincia_graph %}
 <div style="margin-top: 30px;">
     {{ provincia_graph|safe }}
@@ -64,20 +65,109 @@
 </div>
 {% endif %}
 {% if localidad_graph %}
-<div style="margin-top: 30px;">
+<!-- <div>
+  <label for="provincia">Select Provincia:</label>
+  <select id="provincia" name="provincia">
+    <option value="">--Select Provincia--</option>
+  </select>
+</div>
+
+<div>
+  <label for="partido">Select Partido:</label>
+  <select id="partido" name="partido" disabled>
+    <option value="">--Select Partido--</option>
+  </select>
+</div> -->
+<div id="localidad-graph" style="margin-top: 30px;">
     {{ localidad_graph|safe }}
 </div>
 {% endif %}
 
 <a style="margin-top: 30px;" href="{% url 'entregas_interior_descriptive' %}" class="w3-button w3-green w3-margin-top" >Ir a estadisticas descriptivas</a>
 
+<script>
+  console.log('Script loaded');
+  document.addEventListener('DOMContentLoaded', function () {
+    const provincePartidoMapping = {
+      'BUENOS AIRES': ['ISLA MARTIN GARCIA', 'VICENTE LOPEZ', 'SAN ISIDRO', 'TIGRE', 'MALVINAS ARGENTINAS', 'ESCOBAR', 'PILAR', 'SAN FERNANDO', 'GENERAL SAN MARTIN', 'TRES DE FEBRERO', 'SAN MIGUEL', 'JOSE CLEMENTE PAZ', 'MORON', 'HURLINGHAM', 'LA MATANZA NORTE', 'ITUZAINGO', 'MERLO', 'MARCOS PAZ', 'GENERAL LAS HERAS', 'MORENO', 'GENERAL RODRIGUEZ', 'LA MATANZA SUR', 'LOMAS DE ZAMORA', 'ESTEBAN ECHEVERRIA', 'EZEIZA', 'CAÑUELAS', 'LANUS', 'PRESIDENTE PERON', 'BERAZATEGUI', 'QUILMES', 'ALMIRANTE BROWN', 'FLORENCIO VARELA', 'SAN VICENTE', 'AVELLANEDA', 'LA PLATA', 'MAGDALENA', 'PUNTA INDIO', 'BERISSO', 'ENSENADA', 'CORONEL BRANDSEN', 'GENERAL PAZ', 'PERGAMINO', 'PELLEGRINI', 'ROJAS', 'COLON', 'ARRECIFES', 'SALTO', 'CAPITAN SARMIENTO', 'SAN ANTONIO DE ARECO', 'BARADERO', 'EXALTACION DE LA CRUZ', 'ZARATE', 'CAMPANA', 'SAN NICOLAS', 'RAMALLO', 'SAN PEDRO', 'JUNIN', 'GENERAL ARENALES', 'GENERAL VIAMONTE', 'LEANDRO N ALEM', 'GENERAL PINTO', 'BRAGADO', 'FLORENTINO AMEGHINO', 'LINCOLN', 'CARLOS TEJEDOR', 'GENERAL VILLEGAS', 'RIVADAVIA', 'SALLIQUELO', 'TRES LOMAS', 'ADOLFO ALSINA', 'TRENQUE LAUQUEN', 'GUAMINI', 'ALBERTI', 'PEHUAJO', 'HIPOLITO YRIGOYEN', 'DAIREAUX', '9 DE JULIO', '25 DE MAYO', 'BOLIVAR', 'CARLOS CASARES', 'OLAVARRIA', 'MERCEDES', 'NAVARRO', 'SUIPACHA', 'SAN ANDRES DE GILES', 'CHACABUCO', 'CHIVILCOY', 'LUJAN', 'CARMEN DE ARECO', 'TANDIL', 'NECOCHEA', 'BALCARCE', 'BENITO JUAREZ', 'ADOLFO GONZALES CHAVES', 'DOLORES', 'CASTELLI', 'GENERAL LAVALLE', 'LA COSTA', 'PILA', 'GENERAL GUIDO', 'MAIPU', 'CHASCOMUS', 'AYACUCHO', 'GENERAL MADARIAGA', 'PINAMAR', 'MAR CHIQUITA', 'LAS FLORES', 'RAUCH', 'AZUL', 'MONTE', 'GENERAL BELGRANO', 'LOBOS', 'ROQUE PEREZ', 'SALADILLO', 'GENERAL ALVEAR', 'TAPALQUE', 'GENERAL LAMADRID', 'LAPRIDA', 'TRES ARROYOS', 'CORONEL PRINGLES', 'SAN CAYETANO', 'CORONEL DORREGO', 'CORONEL SUAREZ', 'GENERAL PUEYRREDON', 'GENERAL ALVARADO', 'LOBERIA', 'BAHIA BLANCA', 'CORONEL ROSALES', 'TORNQUIST', 'PUAN', 'VILLARINO', 'PATAGONES', 'MONTE HERMOSO', 'SAAVEDRA'],
+      'CAPITAL FEDERAL': ['CIUDAD AUTONOMA DE BUENOS AIRES'],
+      'CATAMARCA': ['SANTA MARIA', 'EL ALTO', 'CAPITAL', 'ANCASTI', 'ANTOFAGASTA DE LA SIERRA', 'VALLE VIEJO', 'FRAY MAMERTO ESQUIU', 'AMBATO', 'PACLIN', 'SANTA ROSA', 'CAPAYAN', 'ANDALGALA', 'BELEN', 'LA PAZ', 'POMAN', 'TINOGASTA'],
+      'CHACO': ['SAN FERNANDO', 'FRAY JUSTO SANTA MARIA DE ORO', '1 DE MAYO', 'LIBERTADOR GRAL SAN MARTIN', 'TAPENAGA', 'SARGENTO CABRAL', 'BERMEJO', 'LIBERTAD', 'GENERAL DONOVAN', 'QUITILIPI', '25 DE MAYO', 'PRESIDENCIA DE LA PLAZA', 'MAYOR LUIS J FONTANA', 'SAN LORENZO', 'COMANDANTE FERNANDEZ', 'O HIGGINS', 'GENERAL GUEMES', 'MAIPU', 'INDEPENDENCIA', 'ALMIRANTE BROWN', 'GENERAL BELGRANO', '9 DE JULIO', 'CHACABUCO', '12 DE OCTUBRE', '2 DE ABRIL'],
+      'CHUBUT': ['CUSHAMEN', 'ESCALANTE', 'SARMIENTO', 'RIO SENGUER', 'GASTRE', 'MARTIRES', 'RAWSON', 'GAIMAN', 'BIEDMA', 'TELSEN', 'FUTALEUFU', 'PASO DE INDIOS', 'TEHUELCHES', 'LANGUIÑEO'],
+      'CORDOBA': ['MARCOS JUAREZ', 'RIO SECO', 'SAN JUSTO', 'UNION', 'JUAREZ CELMAN', 'GENERAL SAN MARTIN', 'CAPITAL', 'COLON', 'SANTA MARIA', 'RIO SEGUNDO', 'RIO PRIMERO', 'PUNILLA', 'CALAMUCHITA', 'SAN ALBERTO', 'CRUZ DEL EJE', 'ISCHILIN', 'SOBREMONTE', 'TULUMBA', 'TOTORAL', 'MINAS', 'RIO CUARTO', 'TERCERO ARRIBA', 'SAN JAVIER', 'POCHO', 'PRESIDENTE ROQUE SAENZ PEÑA', 'GENERAL ROCA'],
+      'CORRIENTES': ['CURUZU CUATIA', 'ESQUINA', 'MONTE CASEROS', 'MERCEDES', 'SAN MARTIN', 'PASO DE LOS LIBRES', 'ITUZAINGO', 'SANTO TOME', 'GENERAL ALVEAR', 'CAPITAL', 'SAN COSME', 'SAN LUIS DEL PALMAR', 'GENERAL PAZ', 'ITATI', 'SALADAS', 'EMPEDRADO', 'CONCEPCION', 'MBURUCUYA', 'BELLA VISTA', 'LAVALLE', 'SAN ROQUE', 'GOYA', 'SAUCE', 'SAN MIGUEL'],
+      'ENTRE RIOS': ['GUALEGUAYCHU', 'URUGUAY', 'GUALEGUAY', 'TALA', 'ISLAS DEL IBICUY', 'PARANA', 'DIAMANTE', 'NOGOYA', 'VILLAGUAY', 'LA PAZ', 'VICTORIA', 'CONCORDIA', 'FEDERAL', 'FEDERACION', 'FELICIANO', 'SAN SALVADOR', 'COLON'],
+      'FORMOSA': ['LAISHI', 'PIRANE', 'FORMOSA', 'PATIÑO', 'PILCOMAYO', 'PILAGAS', 'BERMEJO', 'RAMON LISTA'],
+      'JUJUY': ['EL CARMEN', 'SAN PEDRO', 'SANTA BARBARA', 'LEDESMA', 'VALLE GRANDE', 'TUMBAYA', 'DR MANUEL BELGRANO', 'SAN ANTONIO', 'PALPALA', 'TILCARA', 'HUMAHUACA', 'COCHINOCA', 'SUSQUES', 'RINCONADA', 'YAVI', 'SANTA CATALINA'],
+      'LA PAMPA': ['CHICAL CO', 'REALICO', 'RANCUL', 'CHAPALEUFU', 'CAPITAL', 'TOAY', 'ATREUCO', 'UTRACAN', 'GUATRACHE', 'QUEMU QUEMU', 'CONHELO', 'LOVENTUE', 'CHALILEO', 'CATRILO', 'MARACO', 'TRENEL', 'CALEU CALEU', 'PUELEN', 'HUCAL'],
+      'LA RIOJA': ['CAPITAL', 'GENERAL ORTIZ DE OCAMPO', 'GENERAL BELGRANO', 'CASTRO BARROS', 'ARAUCO', 'SAN BLAS DE LOS SAUCES', 'CORONEL FELIPE VARELA', 'GENERAL LAMADRID', 'VINCHINA', 'CHILECITO', 'FAMATINA', 'ANGEL VICENTE PEÑALOZA', 'SANAGASTA', 'CHAMICAL', 'GENERAL JUAN FACUNDO QUIROGA', 'INDEPENDENCIA', 'ROSARIO VERA PEÑALOZA', 'GENERAL SAN MARTIN'],
+      'MENDOZA': ['LAS HERAS', 'GODOY CRUZ', 'CAPITAL', 'LUJAN DE CUYO', 'SAN CARLOS', 'MAIPU', 'LAVALLE', 'GUAYMALLEN', 'RIVADAVIA', 'JUNIN', 'MALARGUE', 'TUNUYAN', 'TUPUNGATO', 'SAN MARTIN', 'LA PAZ', 'SANTA ROSA', 'SAN RAFAEL', 'GENERAL ALVEAR'],
+      'MISIONES': ['CAPITAL', 'APOSTOLES', 'CANDELARIA', 'LEANDRO N ALEM', 'SAN IGNACIO', 'SAN JAVIER', 'LIBERTADOR GRAL SAN MARTIN', 'CAINGUAS', 'GUARANI', 'SAN PEDRO', 'CONCEPCION', '25 DE MAYO', 'OBERA', 'GENERAL MANUEL BELGRANO', 'IGUAZU', 'MONTECARLO', 'EL DORADO'],
+      'NEUQUEN': ['CONFLUENCIA', 'AÑELO', 'COLLON CURA', 'CATAN LIL', 'ALUMINE', 'ÑORQUIN', 'LONCOPUE', 'PICUNCHES', 'ZAPALA', 'CHOS MALAL', 'MINAS', 'PEHUENCHES', 'LACAR', 'HUILICHES', 'LOS LAGOS'],
+      'RIO NEGRO': ['AVELLANEDA', 'PICHI MAHUIDA', 'GENERAL ROCA', 'EL CUY', 'BARILOCHE', 'PILCANIYEU', 'ÑORQUINCO', '25 DE MAYO', 'ADOLFO ALSINA', 'CONESA', 'VALCHETA', '9 DE JULIO', 'SAN ANTONIO'],
+      'SALTA': ['LA CANDELARIA', 'CAFAYATE', 'ROSARIO DE LA FRONTERA', 'CAPITAL', 'LA CALDERA', 'CERRILLOS', 'ROSARIO DE LERMA', 'LOS ANDES', 'CHICOANA', 'LA POMA', 'CACHI', 'MOLINOS', 'LA VIÑA', 'SAN CARLOS', 'GENERAL GUEMES', 'METAN', 'ANTA', 'ORAN', 'RIVADAVIA', 'SAN MARTIN', 'IRUYA', 'SANTA VICTORIA'],
+      'SAN JUAN': ['CAPITAL', 'ZONDA', 'CALINGASTA', 'RIVADAVIA', 'JACHAL', 'SANTA LUCIA', 'CHIMBAS', 'ULLUM', 'ANGACO', 'SAN MARTIN', '9 DE JULIO', 'ALBARDON', 'RAWSON', 'POCITO', 'SARMIENTO', 'CAUCETE', '25 DE MAYO', 'VALLE FERTIL', 'IGLESIA'],
+      'SAN LUIS': ['GOBERNADOR DUPUY', 'CAPITAL', 'CORONEL PRINGLES', 'AYACUCHO', 'JUNIN', 'BELGRANO', 'GENERAL PEDERNERA', 'LIB GENERAL SAN MARTIN', 'CHACABUCO'],
+      'SANTA CRUZ': ['DESEADO', 'LAGO BUENOS AIRES', 'CORPEN AIKE', 'LAGO ARGENTINO', 'RIO CHICO', 'GUER AIKE'],
+      'SANTA FE': ['ROSARIO', 'CONSTITUCION', 'SAN LORENZO', 'CASEROS', 'IRIONDO', 'SAN JERONIMO', 'SAN MARTIN', 'LAS COLONIAS', 'CASTELLANOS', 'SAN CRISTOBAL', 'LA CAPITAL', 'VERA', 'BELGRANO', 'GENERAL LOPEZ', 'GARAY', 'SAN JUSTO', 'SAN JAVIER', '9 DE JULIO', 'GENERAL OBLIGADO'],
+      'SANTIAGO DEL ESTERO': ['RIVADAVIA', 'AGUIRRE', 'BELGRANO', 'COPO', 'MORENO', 'ALBERDI', 'JUAN FELIPE IBARRA', 'TABOADA', 'QUEBRACHOS', 'JIMENEZ', 'PELLEGRINI', 'CAPITAL', 'ATAMISQUI', 'GUASAYAN', 'CHOYA', 'SILIPICA', 'RIO HONDO', 'BANDA', 'ROBLES', 'SAN MARTIN', 'SALAVINA', 'AVELLANEDA', 'SARMIENTO', 'FIGUEROA', 'OJO DE AGUA', 'MITRE'],
+      'TIERRA DEL FUEGO': ['MALVINAS', 'USHUAIA', 'ANTARTIDA', 'RIO GRANDE'],
+      'TUCUMAN': ['LEALES', 'CAPITAL', 'CRUZ ALTA', 'YERBA BUENA', 'RIO CHICO', 'BURRUYACU', 'TAFI VIEJO', 'LULES', 'TAFI DEL VALLE', 'FAMAILLA', 'TRANCAS', 'MONTEROS', 'CHICLIGASTA', 'JUAN B ALBERDI', 'LA COCHA', 'GRANEROS', 'SIMOCA'],
+    };
+    console.log(provincePartidoMapping);
+    
+  
+    // Get dropdown elements
+    const provinciaDropdown = document.getElementById('provincia');
+      const partidoDropdown = document.getElementById('partido');
+  
+      // Populate "Provincia" dropdown
+      Object.keys(provincePartidoMapping).forEach(provincia => {
+        const option = document.createElement('option');
+        option.value = provincia;
+        option.textContent = provincia;
+        provinciaDropdown.appendChild(option);
+      });
+  
+      // Add change event to "Provincia" dropdown
+      provinciaDropdown.addEventListener('change', function () {
+        const selectedProvincia = this.value;
+  
+        // Clear previous options in "Partido" dropdown
+        partidoDropdown.innerHTML = '<option value="">--Select Partido--</option>';
+  
+        if (selectedProvincia && provincePartidoMapping[selectedProvincia]) {
+          // Enable "Partido" dropdown
+          partidoDropdown.disabled = false;
+  
+          // Populate "Partido" dropdown
+          provincePartidoMapping[selectedProvincia].forEach(partido => {
+            const option = document.createElement('option');
+            option.value = partido;
+            option.textContent = partido;
+            partidoDropdown.appendChild(option);
+          });
+        } else {
+          // Disable "Partido" dropdown if no valid "Provincia" selected
+          partidoDropdown.disabled = true;
+        }
+  });
+
+  // Add change event to "Partido" dropdown
+  partidoDropdown.addEventListener('change', function () {
+    const selectedPartido = this.value;
+
+    // Update the graph dynamically (using Plotly example)
+    if (selectedPartido) {
+      console.log(`Selected Partido: ${selectedPartido}`);
+
+      Plotly.restyle('localidad-graph', {
+        x: [[selectedPartido]], // Example of updating x-axis data
+      });
+    }
+  });
+});
+  </script>
+
 {% endblock %}
 
-<script>
-  function toggleAccordion(id) {
-  const content = document.getElementById(id);
-  const isVisible = content.style.display === 'block';
-  document.querySelectorAll('.accordion-content').forEach(c => c.style.display = 'none'); // Close all
-  content.style.display = isVisible ? 'none' : 'block'; // Toggle visibility
-  }
-</script>

@@ -1,5 +1,6 @@
 import plotly.graph_objects as go
 import pandas as pd
+import numpy as np
 
 def fallidos_vs_completados_graph(df, start_date, end_date, sellers_objects=None):
     """
@@ -289,7 +290,7 @@ def create_bar_chart(df0, group_col, y_col, title):
 
 def create_filtered_chart(df0, group_col, sub_group_col, y_col, title, raws_col="raw_delta_days", busy_col='busy_delta_days'):
     df = df0.sort_values(by=busy_col, ascending=False)
-    partidos = df[group_col].unique()
+    partidos = np.sort(df[group_col].unique())
 
     fig = go.Figure()
 

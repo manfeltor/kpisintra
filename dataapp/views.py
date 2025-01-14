@@ -337,12 +337,12 @@ def entregas_interior_central_stats(req):
     enriched_df = percentage_strip(enriched_df0, 'raw_delta_days', 0.60, True, True)
 
     # raw averages
-    averages_by_partido_localidad = enriched_df.groupby(['codigoPostal__partido', 'codigoPostal__localidad'])[['raw_delta_days', 'busy_delta_days']].mean().reset_index()
+    averages_by_partido_localidad = enriched_df.groupby(['codigoPostal__provincia', 'codigoPostal__partido', 'codigoPostal__localidad'])[['raw_delta_days', 'busy_delta_days']].mean().reset_index()
     averages_by_provincia_partido = enriched_df.groupby(['codigoPostal__provincia', 'codigoPostal__partido'])[['raw_delta_days', 'busy_delta_days']].mean().reset_index()
     averages_by_provincia = enriched_df.groupby('codigoPostal__provincia')[['raw_delta_days', 'busy_delta_days']].mean().reset_index()
 
     # raw graphs
-    localidad_graph = create_filtered_chart(averages_by_partido_localidad, 'codigoPostal__partido', 'codigoPostal__localidad', ['raw_delta_days', 'busy_delta_days'], "Promedios por Localidad y Partido")
+    localidad_graph = create_filtered_chart(averages_by_partido_localidad, 'codigoPostal__partido', 'codigoPostal__localidad', ['raw_delta_days', 'busy_delta_days'], "Promedios por Localidad y Partido")    
     partido_graph = create_filtered_chart(averages_by_provincia_partido, 'codigoPostal__provincia', 'codigoPostal__partido', ['raw_delta_days', 'busy_delta_days'], "Promedios por partido")
     provincia_graph = create_bar_chart(averages_by_provincia, 'codigoPostal__provincia', ['raw_delta_days', 'busy_delta_days'], "Promedios por provincia")
 
